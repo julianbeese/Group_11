@@ -33,15 +33,15 @@ Keep all the .py and .ipynb out of the main directory. The only files in the mai
 
 ### Day 1, Phase 2
 
-- [ ] The class you decide the create for the project has finally been named after a brief internal fight and is __PEP8 compliant, like the entire project__.
+- [X] The class you decide the create for the project has finally been named after a brief internal fight and is __PEP8 compliant, like the entire project__.
 
 The class will have several methods, which you will __not__ develop in the master branch.  
 Document everything!  
 Make your calls compliant with __pydantic__ and __static type checking__ when appliable.
 
-- [ ] During the _init_ method, your class must download the data file into a __downloads/__ directory in the root directory of the project (main project directory). If the data file already exists, the method will not download it again.
-- [ ] The _init_ method must also unzip the files.
-- [ ] The _init_ method must also read the datasets into corresponding pandas dataframes which become attributes for your class.
+- [X] During the _init_ method, your class must download the data file into a __downloads/__ directory in the root directory of the project (main project directory). If the data file already exists, the method will not download it again.
+- [X] The _init_ method must also unzip the files.
+- [X] The _init_ method must also read the datasets into corresponding pandas dataframes which become attributes for your class.
 
 ## Day 1, Phase 3
 
