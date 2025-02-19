@@ -45,10 +45,10 @@ Make your calls compliant with __pydantic__ and __static type checking__ when ap
 
 ## Day 1, Phase 3
 
-- [ ] Develop a first method for your class called __movie_type__ that accepts a single int parameter "N" with a default value of 10. If N is not an integer, raise an Exception. It should calculate a pandas dataframe with columns "Movie_Type" of the "N" most common types of movies and how many times they show up in the database. 
-- [ ] Develop a second method called __actor_count__. This method calculates a pandas dataframe with a histogram of "number of actors" vs "movie counts".
-- [ ] Develop a third method called __actor_distributions__ that receives as arguments a string called "gender", two floats: "max_height" and "min_height", and a bool called "plot", with default False. If "gender" is not a string of if the hieghts are not numerical values, an exception must be raised. If the variable "plot" is True, this method should do a plot in matplotlib of the height distributions. The "gender" variable should accept "All" or the distinct non-missing values in the dataset. Do you think the heights should have a special check?
-- [ ] Make a test with pytest (I want to just run _pytest_ in the main directory and perform the tests) where you test if the error handling the first and third methods are working properly.
+- [X] Develop a first method for your class called __movie_type__ that accepts a single int parameter "N" with a default value of 10. If N is not an integer, raise an Exception. It should calculate a pandas dataframe with columns "Movie_Type" of the "N" most common types of movies and how many times they show up in the database. 
+- [X] Develop a second method called __actor_count__. This method calculates a pandas dataframe with a histogram of "number of actors" vs "movie counts".
+- [X] Develop a third method called __actor_distributions__ that receives as arguments a string called "gender", two floats: "max_height" and "min_height", and a bool called "plot", with default False. If "gender" is not a string of if the hieghts are not numerical values, an exception must be raised. If the variable "plot" is True, this method should do a plot in matplotlib of the height distributions. The "gender" variable should accept "All" or the distinct non-missing values in the dataset. Do you think the heights should have a special check?
+- [X] Make a test with pytest (I want to just run _pytest_ in the main directory and perform the tests) where you test if the error handling the first and third methods are working properly.
 
 ### Day 1, Phase 4
 
