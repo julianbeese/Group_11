@@ -6,6 +6,7 @@ from pathlib import Path
 DATA_DIR = Path("data")
 EXTRACTED_DIR = DATA_DIR
 
+
 class MovieDataset:
     def __init__(self):
         """
@@ -20,14 +21,23 @@ class MovieDataset:
                 EXTRACTED_DIR / "movie.metadata.tsv",
                 sep="\t",
                 header=None,
-                names=["movie_id", "title", "release_date", "revenue", "runtime", "languages", "countries", "genres"]
+                names=[
+                    "movie_id",
+                    "title",
+                    "release_date",
+                    "revenue",
+                    "runtime",
+                    "languages",
+                    "countries",
+                    "genres",
+                ],
             )
 
             self.character_metadata = pd.read_csv(
                 EXTRACTED_DIR / "character.metadata.tsv",
                 sep="\t",
                 header=None,
-                names=["character_id", "movie_id", "actor_id", "gender", "height"]
+                names=["character_id", "movie_id", "actor_id", "gender", "height"],
             )
 
             print("Datasets loaded successfully.")
@@ -66,10 +76,13 @@ class MovieDataset:
             raise ValueError("N must be an integer.")
 
         genre_counts = Counter(
-            genre.strip() for genres in self.movie_metadata["genres"].dropna()
+            genre.strip()
+            for genres in self.movie_metadata["genres"].dropna()
             for genre in genres.split(",")
         )
-        df = pd.DataFrame(genre_counts.items(), columns=["Movie_Type", "Count"]).nlargest(N, "Count")
+        df = pd.DataFrame(
+            genre_counts.items(), columns=["Movie_Type", "Count"]
+        ).nlargest(N, "Count")
         return df
 
     def actor_count(self):
@@ -95,7 +108,9 @@ class MovieDataset:
         df.columns = ["Number_of_Actors", "Movie_Count"]
         return df
 
-    def actor_distributions(self, gender="All", min_height=0.0, max_height=300.0, plot=False):
+    def actor_distributions(
+        self, gender="All", min_height=0.0, max_height=300.0, plot=False
+    ):
         """
         Calculates and optionally plots the height distribution of actors based on gender and height range.
 
@@ -123,7 +138,9 @@ class MovieDataset:
 
         if not isinstance(gender, str):
             raise ValueError("Gender must be a string.")
-        if not isinstance(min_height, (int, float)) or not isinstance(max_height, (int, float)):
+        if not isinstance(min_height, (int, float)) or not isinstance(
+            max_height, (int, float)
+        ):
             raise ValueError("Height values must be numerical.")
 
         df = self.character_metadata.copy()
