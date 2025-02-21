@@ -1,17 +1,19 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import Counter
+import ast
 from pathlib import Path
 
 DATA_DIR = Path("data")
 EXTRACTED_DIR = DATA_DIR
+
 
 class MovieDataset:
     def __init__(self):
         """
         loading the data
         """
-        self._load_data()
+        self._load_data()  
 
     def _load_data(self):
         """loading the dataset into a pandas dataframe"""
@@ -20,14 +22,23 @@ class MovieDataset:
                 EXTRACTED_DIR / "movie.metadata.tsv",
                 sep="\t",
                 header=None,
-                names=["movie_id", "title", "release_date", "revenue", "runtime", "languages", "countries", "genres"]
+                names=[
+                    "movie_id",
+                    "title",
+                    "release_date",
+                    "revenue",
+                    "runtime",
+                    "languages",
+                    "countries",
+                    "genres",
+                ],
             )
 
             self.character_metadata = pd.read_csv(
                 EXTRACTED_DIR / "character.metadata.tsv",
                 sep="\t",
                 header=None,
-                names=["character_id", "movie_id", "actor_id", "gender", "height"]
+                names=["character_id", "movie_id", "actor_id", "gender", "height"],
             )
 
             print("Datasets loaded successfully.")
@@ -62,15 +73,30 @@ class MovieDataset:
         ValueError
             If N is a negative integer.
         """
+
+        cnt = Counter()
+
         if not isinstance(N, int):
             raise ValueError("N must be an integer.")
 
-        genre_counts = Counter(
-            genre.strip() for genres in self.movie_metadata["genres"].dropna()
-            for genre in genres.split(",")
-        )
-        df = pd.DataFrame(genre_counts.items(), columns=["Movie_Type", "Count"]).nlargest(N, "Count")
-        return df
+        for item in self.movie_metadata["genres"]:
+            if pd.isna(item):
+                continue
+
+            if isinstance(item, dict):
+                genre_dict = item
+            else:
+                try:
+                    genre_dict = ast.literal_eval(item)
+                except Exception as e:
+                    print(f"Parsing Error {e}")
+                    continue
+
+            cnt.update(genre_dict.values())
+
+        df = pd.DataFrame(list(cnt.items()), columns=["Genre", "Count"])
+
+        return df.nlargest(N, "Count").reset_index(drop=True)
 
     def actor_count(self):
         """
@@ -95,7 +121,9 @@ class MovieDataset:
         df.columns = ["Number_of_Actors", "Movie_Count"]
         return df
 
-    def actor_distributions(self, gender="All", min_height=0.0, max_height=300.0, plot=False):
+    def actor_distributions(
+        self, gender="All", min_height=0.0, max_height=300.0, plot=False
+    ):
         """
         Calculates and optionally plots the height distribution of actors based on gender and height range.
 
@@ -123,7 +151,9 @@ class MovieDataset:
 
         if not isinstance(gender, str):
             raise ValueError("Gender must be a string.")
-        if not isinstance(min_height, (int, float)) or not isinstance(max_height, (int, float)):
+        if not isinstance(min_height, (int, float)) or not isinstance(
+            max_height, (int, float)
+        ):
             raise ValueError("Height values must be numerical.")
 
         df = self.character_metadata.copy()
