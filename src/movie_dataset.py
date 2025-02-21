@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import Counter
+import ast
 from pathlib import Path
 
 DATA_DIR = Path("data")
@@ -12,7 +13,7 @@ class MovieDataset:
         """
         loading the data
         """
-        self._load_data()
+        self._load_data()  
 
     def _load_data(self):
         """loading the dataset into a pandas dataframe"""
@@ -72,18 +73,30 @@ class MovieDataset:
         ValueError
             If N is a negative integer.
         """
+
+        cnt = Counter()
+
         if not isinstance(N, int):
             raise ValueError("N must be an integer.")
 
-        genre_counts = Counter(
-            genre.strip()
-            for genres in self.movie_metadata["genres"].dropna()
-            for genre in genres.split(",")
-        )
-        df = pd.DataFrame(
-            genre_counts.items(), columns=["Movie_Type", "Count"]
-        ).nlargest(N, "Count")
-        return df
+        for item in self.movie_metadata["genres"]:
+            if pd.isna(item):
+                continue
+
+            if isinstance(item, dict):
+                genre_dict = item
+            else:
+                try:
+                    genre_dict = ast.literal_eval(item)
+                except Exception as e:
+                    print(f"Parsing Error {e}")
+                    continue
+
+            cnt.update(genre_dict.values())
+
+        df = pd.DataFrame(list(cnt.items()), columns=["Genre", "Count"])
+
+        return df.nlargest(N, "Count").reset_index(drop=True)
 
     def actor_count(self):
         """
