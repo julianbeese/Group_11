@@ -4,7 +4,13 @@ import matplotlib.pyplot as plt
 from src.movie_dataset import MovieDataset
 
 # initialising the class
-dataset = MovieDataset()
+try:
+    dataset = MovieDataset()
+
+except Exception as e:
+    st.error(f"Error loading dataset: {e}")
+    st.stop()
+
 
 # Streamlit App UI
 st.title("🎬 Movie Data Analysis")
@@ -12,21 +18,25 @@ st.title("🎬 Movie Data Analysis")
 # --- SECTION 1: Movie Types ---
 st.header("📊 Most Common Movie Types")
 
-# input field
-N = st.number_input("Select the number of top movie types:", min_value=1, max_value=50, value=10, step=1)
-df_movie_types = dataset.movie_type(N)
+# Now Print the DataFrame and Graph
+N = st.number_input("Select the Number to Display", min_value=1, max_value=50, step=1, value=10)
+try:
+    counting = dataset.movie_type(N)
 
-# Table
-st.dataframe(df_movie_types)
+    col1, col2 = st.columns(2)
 
-# histogram
-fig, ax = plt.subplots()
-ax.bar(df_movie_types["Movie_Type"], df_movie_types["Count"], color="skyblue")
-ax.set_xlabel("Movie Type")
-ax.set_ylabel("Count")
-ax.set_title(f"Top {N} Most Common Movie Types")
-plt.xticks(rotation=45, ha="right")
-st.pyplot(fig)
+    with col1: 
+        # Dataframe for the genres
+        st.write("Genre Counts")
+        st.dataframe(counting, width= 500)
+
+    with col2: 
+        # Chart for the selected genres
+        st.write("Top Genre Chart")
+        st.bar_chart(counting.set_index("Genre"), width = 500, height = 400, horizontal= True)
+
+except Exception as e:
+    st.error(f"Error generating genre counts: {e}")
 
 # --- SECTION 2: Actor Count Histogram ---
 st.header("🎭 Number of Actors per Movie")
