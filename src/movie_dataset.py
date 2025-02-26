@@ -1,3 +1,16 @@
+"""
+Movie Dataset Analysis Module
+
+This module provides a class `MovieDataset` for loading and analyzing movie metadata and character data.
+It includes functionality to:
+- Load movie and character metadata from TSV files
+- Analyze movie genre frequencies
+- Calculate actor counts per movie
+- Analyze actor height distributions with optional visualization
+
+The data is expected to be in the 'data' directory relative to the script location.
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import Counter
@@ -9,14 +22,26 @@ EXTRACTED_DIR = DATA_DIR
 
 
 class MovieDataset:
+    """
+    A class to handle movie dataset loading and analysis.
+
+    Attributes:
+        movie_metadata (pd.DataFrame): DataFrame containing movie metadata
+        character_metadata (pd.DataFrame): DataFrame containing character metadata
+    """
+
     def __init__(self):
         """
-        Loading the data
+        Initialize the MovieDataset by loading the data.
         """
         self._load_data()
 
     def _load_data(self):
-        """Loading the dataset into a pandas DataFrame"""
+        """
+        Load movie and character metadata from TSV files into DataFrames.
+
+        Handles potential file loading errors and prints diagnostic information.
+        """
         try:
             self.movie_metadata = pd.read_csv(
                 EXTRACTED_DIR / "movie.metadata.tsv",
@@ -34,19 +59,17 @@ class MovieDataset:
                 ],
             )
 
-            # Einlesen der character.metadata.tsv mit expliziten Spaltennamenzuweisungen
-            # basierend auf der tatsächlichen Struktur der Datei
             expected_columns = [
                 "wiki_character_id",
                 "freebase_movie_id",
-                "release_date",  # Die Spalte, die falsch interpretiert wurde
-                "character_name",  # Verschobene Spalte
-                "actor_dob",  # Verschobene Spalte
-                "actor_gender",  # Verschobene Spalte
-                "actor_height",  # Verschobene Spalte
-                "actor_ethnicity",  # Verschobene Spalte
-                "actor_name",  # Verschobene Spalte
-                "actor_age_at_movie_release",  # Verschobene Spalte
+                "release_date",
+                "character_name",
+                "actor_dob",
+                "actor_gender",
+                "actor_height",
+                "actor_ethnicity",
+                "actor_name",
+                "actor_age_at_movie_release",
                 "freebase_character_map_1",
                 "freebase_character_map_2",
                 "freebase_character_map_3",
@@ -61,39 +84,25 @@ class MovieDataset:
             )
 
             print("Datasets loaded successfully.")
-            print(f"Printing unique actor_gender values: {self.character_metadata['actor_gender'].unique()}")
 
         except FileNotFoundError as e:
             print(f"Error loading dataset: {e}")
 
     def movie_type(self, N=10):
         """
-        Calculates the N most common movie types and their counts.
+        Calculate the N most common movie genres and their counts.
 
-        This method generates a Pandas DataFrame containing the N most frequent
-        movie types found in the database, along with their respective counts.
+        Args:
+            N (int, optional): Number of top genres to return. Defaults to 10.
 
-        Parameters
-        ----------
-        N : int, default 10
-            The number of most common movie types to retrieve.  Must be a non-negative integer.
+        Returns:
+            pd.DataFrame: DataFrame with columns "Genre" and "Count" showing the N most
+                         common genres and their frequencies.
 
-        Returns
-        -------
-        pd.DataFrame
-            A DataFrame with two columns: "Movie_Type" and "Count".
-            "Movie_Type" contains the names of the N most common movie types,
-            and "Count" contains the number of times each type appears in the database.
-            Returns an empty DataFrame if no movie types are found.
-
-        Raises
-        ------
-        TypeError
-            If N is not an integer.
-        ValueError
-            If N is a negative integer.
+        Raises:
+            TypeError: If N is not an integer.
+            ValueError: If N is negative.
         """
-
         cnt = Counter()
 
         if not isinstance(N, int):
@@ -115,73 +124,45 @@ class MovieDataset:
             cnt.update(genre_dict.values())
 
         df = pd.DataFrame(list(cnt.items()), columns=["Genre", "Count"])
-
         return df.nlargest(N, "Count").reset_index(drop=True)
 
     def actor_count(self):
         """
-        Calculates and returns a histogram of the number of actors per movie versus the number of movies with that actor count.
+        Calculate a histogram of number of actors per movie.
 
-        This method analyzes the movie data to determine the distribution of actors across movies.
-        It generates a Pandas DataFrame representing a histogram where the index represents the
-        number of actors in a movie, and the 'Movie Count' column indicates the number of movies
-        featuring that specific number of actors.
-
-        Returns
-        -------
-        pd.DataFrame
-            A DataFrame representing the actor count histogram. The index of the DataFrame
-            corresponds to the number of actors in a movie, and the single column 'Movie Count'
-            contains the number of movies with that many actors. Returns an empty DataFrame
-            if no actor information is available.
+        Returns:
+            pd.DataFrame: DataFrame with columns "Number_of_Actors" and "Movie_Count"
+                         showing the distribution of actors across movies.
         """
-
         actor_counts = self.character_metadata.groupby("freebase_movie_id")["wiki_character_id"].count()
         df = actor_counts.value_counts().reset_index()
         df.columns = ["Number_of_Actors", "Movie_Count"]
         return df
 
-    def actor_distributions(
-        self, gender="All", min_height=0.0, max_height=300.0, plot=False
-    ):
+    def actor_distributions(self, gender="All", min_height=0.0, max_height=300.0, plot=False):
         """
-        Calculates and optionally plots the height distribution of actors based on gender and height range.
+        Calculate and optionally plot the height distribution of actors.
 
-        Parameters
-        ----------
-        gender : str
-            The gender to filter by. Must be "All" to include all genders or a specific gender value present in the dataset.
-        max_height : float
-            The maximum height (inclusive) for filtering.
-        min_height : float
-            The minimum height (inclusive) for filtering.
-        plot : bool, default False
-            Whether to generate a matplotlib plot of the height distribution.
+        Args:
+            gender (str): Gender to filter by ("All" or specific gender). Defaults to "All".
+            min_height (float): Minimum height in cm (inclusive). Defaults to 0.0.
+            max_height (float): Maximum height in cm (inclusive). Defaults to 300.0.
+            plot (bool): Whether to generate a histogram plot. Defaults to False.
 
-        Returns
-        -------
-        pd.DataFrame
-            A DataFrame containing the height distribution.
+        Returns:
+            pd.DataFrame: Filtered DataFrame containing actor height data.
 
-        Raises
-        ------
-        ValueError
-            If `gender` is not a string, or `min_height` or `max_height` are not numeric.
+        Raises:
+            ValueError: If gender is not a string or height parameters are not numeric.
         """
-
         if not isinstance(gender, str):
             raise ValueError("Gender must be a string.")
-        if not isinstance(min_height, (int, float)) or not isinstance(
-            max_height, (int, float)
-        ):
+        if not isinstance(min_height, (int, float)) or not isinstance(max_height, (int, float)):
             raise ValueError("Height values must be numerical.")
 
         df = self.character_metadata.copy()
-
         df["actor_height"] = pd.to_numeric(df["actor_height"], errors="coerce")
-
         df = df.dropna(subset=["actor_height"])
-
         df = df[(df["actor_height"] >= min_height) & (df["actor_height"] <= max_height)]
 
         if gender != "All":

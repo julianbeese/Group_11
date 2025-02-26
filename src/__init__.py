@@ -1,5 +1,11 @@
 """
-This file handles the data downloading and unzipping if there is no data
+Data Downloader and Extractor for Movie Summaries Dataset
+
+This module handles the downloading and extraction of the Movie Summaries dataset from Carnegie Mellon University.
+It checks for existing data, downloads the dataset if necessary, and extracts it to a local directory.
+
+The dataset is downloaded from: http://www.cs.cmu.edu/~ark/personas/data/MovieSummaries.tar.gz
+and stored in a 'data' directory relative to this script.
 """
 
 import os
@@ -15,7 +21,10 @@ EXTRACTED_DIR = DATA_DIR
 
 def download_and_extract_data():
     """
-    Checking if the data is already in the /data folder
+    Check for existing data and manage download and extraction process.
+
+    Creates the data directory if it doesn't exist, downloads the dataset if not present,
+    and extracts it if the extracted files aren't already available.
     """
     DATA_DIR.mkdir(exist_ok=True)
 
@@ -29,7 +38,11 @@ def download_and_extract_data():
 
 
 def download_data():
-    """downloading the dataset"""
+    """
+    Download the Movie Summaries dataset from the specified URL.
+
+    Uses streaming download to handle large files efficiently, saving to the DATA_FILE path.
+    """
     response = requests.get(DATA_URL, stream=True)
     with open(DATA_FILE, "wb") as file:
         for chunk in response.iter_content(chunk_size=1024):
@@ -37,9 +50,14 @@ def download_data():
 
 
 def extract_data():
-    """extracting the data from the zip file"""
+    """
+    Extract the downloaded tar.gz file to the data directory.
+
+    Opens the tar file in read mode and extracts all contents to DATA_DIR.
+    """
     with tarfile.open(DATA_FILE, "r:gz") as tar:
         tar.extractall(DATA_DIR)
 
 
+# Execute the data handling process
 download_and_extract_data()
