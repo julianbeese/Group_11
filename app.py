@@ -58,7 +58,8 @@ st.pyplot(fig)
 # --- SECTION 3: Actor Height Distribution ---
 st.header("📏 Actor Height Distribution")
 
-gender_options = ["All"] + dataset.character_metadata["gender"].dropna().unique().tolist()
+print(f"printing", dataset.character_metadata["actor_gender"])
+gender_options = ["All"] + dataset.character_metadata["actor_gender"].dropna().astype(str).unique().tolist()
 selected_gender = st.selectbox("Select gender:", gender_options)
 
 min_height = st.number_input("Minimum height (cm):", min_value=0, max_value=300, value=150)

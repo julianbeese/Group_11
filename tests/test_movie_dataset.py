@@ -21,7 +21,7 @@ def test_movie_type_valid(dataset):
     print("test_movie_type_valid was successfull")
 
 def test_movie_type_invalid():
-    """Testing if an value error is raised if a wrong type is injected"""
+    """Testing if a value error is raised if a wrong type is injected"""
     dataset = MovieDataset()
     with pytest.raises(ValueError):
         dataset.movie_type("ten")

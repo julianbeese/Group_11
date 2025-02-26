@@ -11,12 +11,12 @@ EXTRACTED_DIR = DATA_DIR
 class MovieDataset:
     def __init__(self):
         """
-        loading the data
+        Loading the data
         """
-        self._load_data()  
+        self._load_data()
 
     def _load_data(self):
-        """loading the dataset into a pandas dataframe"""
+        """Loading the dataset into a pandas DataFrame"""
         try:
             self.movie_metadata = pd.read_csv(
                 EXTRACTED_DIR / "movie.metadata.tsv",
@@ -34,14 +34,34 @@ class MovieDataset:
                 ],
             )
 
+            # Einlesen der character.metadata.tsv mit expliziten Spaltennamenzuweisungen
+            # basierend auf der tatsächlichen Struktur der Datei
+            expected_columns = [
+                "wiki_character_id",
+                "freebase_movie_id",
+                "release_date",  # Die Spalte, die falsch interpretiert wurde
+                "character_name",  # Verschobene Spalte
+                "actor_dob",  # Verschobene Spalte
+                "actor_gender",  # Verschobene Spalte
+                "actor_height",  # Verschobene Spalte
+                "actor_ethnicity",  # Verschobene Spalte
+                "actor_name",  # Verschobene Spalte
+                "actor_age_at_movie_release",  # Verschobene Spalte
+                "freebase_character_map_1",
+                "freebase_character_map_2",
+                "freebase_character_map_3",
+            ]
+
             self.character_metadata = pd.read_csv(
                 EXTRACTED_DIR / "character.metadata.tsv",
                 sep="\t",
                 header=None,
-                names=["character_id", "movie_id", "actor_id", "gender", "height"],
+                names=expected_columns,
+                low_memory=False
             )
 
             print("Datasets loaded successfully.")
+            print(f"Printing unique actor_gender values: {self.character_metadata['actor_gender'].unique()}")
 
         except FileNotFoundError as e:
             print(f"Error loading dataset: {e}")
@@ -116,7 +136,7 @@ class MovieDataset:
             if no actor information is available.
         """
 
-        actor_counts = self.character_metadata.groupby("movie_id")["actor_id"].count()
+        actor_counts = self.character_metadata.groupby("freebase_movie_id")["wiki_character_id"].count()
         df = actor_counts.value_counts().reset_index()
         df.columns = ["Number_of_Actors", "Movie_Count"]
         return df
@@ -158,17 +178,17 @@ class MovieDataset:
 
         df = self.character_metadata.copy()
 
-        df["height"] = pd.to_numeric(df["height"], errors="coerce")
+        df["actor_height"] = pd.to_numeric(df["actor_height"], errors="coerce")
 
-        df = df.dropna(subset=["height"])
+        df = df.dropna(subset=["actor_height"])
 
-        df = df[(df["height"] >= min_height) & (df["height"] <= max_height)]
+        df = df[(df["actor_height"] >= min_height) & (df["actor_height"] <= max_height)]
 
         if gender != "All":
-            df = df[df["gender"] == gender]
+            df = df[df["actor_gender"] == gender]
 
         if plot:
-            plt.hist(df["height"], bins=30, edgecolor="black")
+            plt.hist(df["actor_height"], bins=30, edgecolor="black")
             plt.xlabel("Height (cm)")
             plt.ylabel("Frequency")
             plt.title(f"Height Distribution for Gender: {gender}")
