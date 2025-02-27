@@ -58,6 +58,4 @@ def extract_data():
     with tarfile.open(DATA_FILE, "r:gz") as tar:
         tar.extractall(DATA_DIR)
 
-
-# Execute the data handling process
 download_and_extract_data()

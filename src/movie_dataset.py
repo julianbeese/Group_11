@@ -142,6 +142,7 @@ class MovieDataset:
     def actor_distributions(self, gender="All", min_height=0.0, max_height=300.0, plot=False):
         """
         Calculate and optionally plot the height distribution of actors.
+        Handles height values stored in meters (e.g., 1.72) and converts to cm.
 
         Args:
             gender (str): Gender to filter by ("All" or specific gender). Defaults to "All".
@@ -151,9 +152,6 @@ class MovieDataset:
 
         Returns:
             pd.DataFrame: Filtered DataFrame containing actor height data.
-
-        Raises:
-            ValueError: If gender is not a string or height parameters are not numeric.
         """
         if not isinstance(gender, str):
             raise ValueError("Gender must be a string.")
@@ -161,8 +159,16 @@ class MovieDataset:
             raise ValueError("Height values must be numerical.")
 
         df = self.character_metadata.copy()
+
         df["actor_height"] = pd.to_numeric(df["actor_height"], errors="coerce")
+
         df = df.dropna(subset=["actor_height"])
+
+        meter_mask = df["actor_height"] < 3.0
+        df.loc[meter_mask, "actor_height"] = df.loc[meter_mask, "actor_height"] * 100
+
+        df["actor_height"] = df["actor_height"].round(1)
+
         df = df[(df["actor_height"] >= min_height) & (df["actor_height"] <= max_height)]
 
         if gender != "All":
