@@ -1,7 +1,8 @@
 """
 Movie Dataset Analysis Module
 
-This module provides a class `MovieDataset` for loading and analyzing movie metadata and character data.
+This module provides a class `MovieDataset` for loading and analyzing movie metadata
+and character data.
 It includes functionality to:
 - Load movie and character metadata from TSV files
 - Analyze movie genre frequencies
@@ -11,11 +12,12 @@ It includes functionality to:
 The data is expected to be in the 'data' directory relative to the script location.
 """
 
+import ast
+from collections import Counter
+from pathlib import Path
+
 import pandas as pd
 import matplotlib.pyplot as plt
-from collections import Counter
-import ast
-from pathlib import Path
 
 DATA_DIR = Path("data")
 EXTRACTED_DIR = DATA_DIR
@@ -88,25 +90,25 @@ class MovieDataset:
         except FileNotFoundError as e:
             print(f"Error loading dataset: {e}")
 
-    def movie_type(self, N=10):
+    def movie_type(self, n=10):
         """
-        Calculate the N most common movie genres and their counts.
+        Calculate the n most common movie genres and their counts.
 
         Args:
-            N (int, optional): Number of top genres to return. Defaults to 10.
+            n (int, optional): Number of top genres to return. Defaults to 10.
 
         Returns:
-            pd.DataFrame: DataFrame with columns "Genre" and "Count" showing the N most
+            pd.DataFrame: DataFrame with columns "Genre" and "Count" showing the n most
                          common genres and their frequencies.
 
         Raises:
-            TypeError: If N is not an integer.
-            ValueError: If N is negative.
+            TypeError: If n is not an integer.
+            ValueError: If n is negative.
         """
         cnt = Counter()
 
-        if not isinstance(N, int):
-            raise ValueError("N must be an integer.")
+        if not isinstance(n, int):
+            raise ValueError("n must be an integer.")
 
         for item in self.movie_metadata["genres"]:
             if pd.isna(item):
@@ -117,14 +119,14 @@ class MovieDataset:
             else:
                 try:
                     genre_dict = ast.literal_eval(item)
-                except Exception as e:
+                except (ValueError, SyntaxError) as e:
                     print(f"Parsing Error {e}")
                     continue
 
             cnt.update(genre_dict.values())
 
         df = pd.DataFrame(list(cnt.items()), columns=["Genre", "Count"])
-        return df.nlargest(N, "Count").reset_index(drop=True)
+        return df.nlargest(n, "Count").reset_index(drop=True)
 
     def actor_count(self):
         """
