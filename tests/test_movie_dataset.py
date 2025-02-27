@@ -14,6 +14,7 @@ import pytest
 from src.movie_dataset import MovieDataset
 import pandas as pd
 
+
 @pytest.fixture
 def dataset():
     """
@@ -23,6 +24,7 @@ def dataset():
         MovieDataset: An initialized instance of the MovieDataset class
     """
     return MovieDataset()
+
 
 def test_movie_type_valid(dataset):
     """
@@ -53,6 +55,7 @@ def test_movie_type_invalid():
     with pytest.raises(ValueError):
         dataset.movie_type("ten")
 
+
 def test_actor_distributions_invalid_gender(dataset):
     """
     Test that actor_distributions raises ValueError for non-string gender.
@@ -64,6 +67,7 @@ def test_actor_distributions_invalid_gender(dataset):
     """
     with pytest.raises(ValueError):
         dataset.actor_distributions(gender=123)
+
 
 def test_actor_distributions_invalid_height(dataset):
     """
@@ -79,6 +83,7 @@ def test_actor_distributions_invalid_height(dataset):
 
     with pytest.raises(ValueError):
         dataset.actor_distributions(min_height=150, max_height="tall")
+
 
 def test_actor_distributions_valid(dataset):
     """

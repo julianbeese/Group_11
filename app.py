@@ -49,11 +49,7 @@ def display_movie_types_section(dataset):
     """
     st.header("Most Common Movie Types")
     N = st.number_input(
-        "Select the Number to Display",
-        min_value=1,
-        max_value=50,
-        step=1,
-        value=10
+        "Select the Number to Display", min_value=1, max_value=50, step=1, value=10
     )
     try:
         counting = dataset.movie_type(N)
@@ -73,7 +69,11 @@ def display_actor_count_section(dataset):
     """
     st.header("Number of Actors per Movie")
     df_actor_count = dataset.actor_count()
-    st.bar_chart(df_actor_count.set_index("Number_of_Actors")["Movie_Count"], width=700, height=400)
+    st.bar_chart(
+        df_actor_count.set_index("Number_of_Actors")["Movie_Count"],
+        width=700,
+        height=400,
+    )
 
 
 # --- SECTION 3: Actor Height Distribution ---
@@ -86,21 +86,27 @@ def display_height_distribution_section(dataset):
         dataset (MovieDataset): The initialized movie dataset object
     """
     st.header("Actor Height Distribution")
-    gender_options = ["All"] + dataset.character_metadata["actor_gender"].dropna().astype(str).unique().tolist()
+    gender_options = ["All"] + dataset.character_metadata[
+        "actor_gender"
+    ].dropna().astype(str).unique().tolist()
     selected_gender = st.selectbox("Select gender:", gender_options)
 
     # Update the min/max values to be more appropriate for heights in cm
-    min_height = st.number_input("Minimum height (cm):", min_value=0, max_value=300, value=150)
-    max_height = st.number_input("Maximum height (cm):", min_value=0, max_value=300, value=200)
+    min_height = st.number_input(
+        "Minimum height (cm):", min_value=0, max_value=300, value=150
+    )
+    max_height = st.number_input(
+        "Maximum height (cm):", min_value=0, max_value=300, value=200
+    )
 
     if st.button("Show Height Distribution"):
         df_actor_heights = dataset.actor_distributions(
-            gender=selected_gender,
-            min_height=min_height,
-            max_height=max_height
+            gender=selected_gender, min_height=min_height, max_height=max_height
         )
 
-        st.write(f"Actor Height Distribution for {selected_gender} - {len(df_actor_heights)} records found")
+        st.write(
+            f"Actor Height Distribution for {selected_gender} - {len(df_actor_heights)} records found"
+        )
 
         heights = df_actor_heights["actor_height"].values
 
@@ -111,12 +117,9 @@ def display_height_distribution_section(dataset):
 
             bin_centers = np.round(bin_centers, 1)
 
-            hist_df = pd.DataFrame({
-                'height_bin': bin_centers,
-                'count': hist
-            })
+            hist_df = pd.DataFrame({"height_bin": bin_centers, "count": hist})
 
-            st.bar_chart(hist_df.set_index('height_bin'), height=400)
+            st.bar_chart(hist_df.set_index("height_bin"), height=400)
 
             st.write(f"Height Statistics (cm):")
             st.write(f"Average: {heights.mean():.1f} cm")
@@ -126,13 +129,13 @@ def display_height_distribution_section(dataset):
             if st.checkbox("Show detailed height frequency table"):
                 rounded_heights = np.round(heights, 1)
                 height_counts = pd.Series(rounded_heights).value_counts().sort_index()
-                height_table = pd.DataFrame({
-                    'Height (cm)': height_counts.index,
-                    'Count': height_counts.values
-                })
+                height_table = pd.DataFrame(
+                    {"Height (cm)": height_counts.index, "Count": height_counts.values}
+                )
                 st.dataframe(height_table)
         else:
             st.warning("No data available for the selected criteria.")
+
 
 display_movie_types_section(dataset)
 display_actor_count_section(dataset)

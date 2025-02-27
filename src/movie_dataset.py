@@ -80,7 +80,7 @@ class MovieDataset:
                 sep="\t",
                 header=None,
                 names=expected_columns,
-                low_memory=False
+                low_memory=False,
             )
 
             print("Datasets loaded successfully.")
@@ -134,12 +134,16 @@ class MovieDataset:
             pd.DataFrame: DataFrame with columns "Number_of_Actors" and "Movie_Count"
                          showing the distribution of actors across movies.
         """
-        actor_counts = self.character_metadata.groupby("freebase_movie_id")["wiki_character_id"].count()
+        actor_counts = self.character_metadata.groupby("freebase_movie_id")[
+            "wiki_character_id"
+        ].count()
         df = actor_counts.value_counts().reset_index()
         df.columns = ["Number_of_Actors", "Movie_Count"]
         return df
 
-    def actor_distributions(self, gender="All", min_height=0.0, max_height=300.0, plot=False):
+    def actor_distributions(
+        self, gender="All", min_height=0.0, max_height=300.0, plot=False
+    ):
         """
         Calculate and optionally plot the height distribution of actors.
         Handles height values stored in meters (e.g., 1.72) and converts to cm.
@@ -155,7 +159,9 @@ class MovieDataset:
         """
         if not isinstance(gender, str):
             raise ValueError("Gender must be a string.")
-        if not isinstance(min_height, (int, float)) or not isinstance(max_height, (int, float)):
+        if not isinstance(min_height, (int, float)) or not isinstance(
+            max_height, (int, float)
+        ):
             raise ValueError("Height values must be numerical.")
 
         df = self.character_metadata.copy()
