@@ -82,4 +82,4 @@ To start the Streamlit application, ensure your virtual environment is activated
 streamlit run app.py
 ```
 
-This will launch the Streamlit app in your default web browser. And automatically check if the necessary data is in the /data folder. If not, it will download the data from the internet. (src/__init__.py)
+This will launch the Streamlit app in your default web browser. **And automatically check if the necessary data is in the /data folder. If not, it will download the data from the internet. (src/__init__.py)**
