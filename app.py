@@ -13,11 +13,19 @@ Pages:
 2. Chronological Analysis:
    - Movie releases per year (optionally filtered by genre)
    - Actor birth statistics by year or month
+
+3. Genre Classification:
+   - Uses a local LLM to classify movie genres based on summaries
+   - Compares LLM classifications with actual genres from the database
 """
 
+import ast
 import numpy as np
 import pandas as pd
+import random
+import requests
 import streamlit as st
+import time
 
 from src.movie_dataset import MovieDataset
 
@@ -53,7 +61,7 @@ except (FileNotFoundError, pd.errors.EmptyDataError, ValueError) as load_error:
 
 # Create navigation in sidebar
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Main Dashboard", "Chronological Analysis"])
+page = st.sidebar.radio("Go to", ["Main Dashboard", "Chronological Analysis", "Genre Classification"])
 
 
 # --- MAIN DASHBOARD PAGE ---
@@ -242,3 +250,279 @@ elif page == "Chronological Analysis":
 
         except Exception as e:
             st.error(f"Error analyzing birth statistics: {e}")
+
+
+# --- GENRE CLASSIFICATION PAGE ---
+elif page == "Genre Classification":
+    st.title("Movie Genre Classification with LLM")
+
+    def get_random_movie_with_summary():
+        """
+        Get a random movie with its title, summary, and genres from the dataset.
+
+        Returns:
+            tuple: (movie_title, plot_summary, actual_genres)
+        """
+        plot_summaries = movie_data.load_plot_summaries()
+
+        valid_movies = []
+        for idx, row in movie_data.movie_metadata.iterrows():
+            movie_id = row['movie_id']
+            if movie_id in plot_summaries and not pd.isna(row['genres']):
+                valid_movies.append((movie_id, row))
+
+        if not valid_movies:
+            return "No valid movies found", "", []
+
+        movie_id, row = random.choice(valid_movies)
+        movie_title = row['title']
+        plot_summary = plot_summaries[movie_id]
+
+        try:
+            if isinstance(row['genres'], dict):
+                genre_dict = row['genres']
+            else:
+                genre_dict = ast.literal_eval(row['genres'])
+            genres = list(genre_dict.values())
+        except (ValueError, SyntaxError):
+            genres = []
+
+        return movie_title, plot_summary, genres
+
+    def classify_with_llm(title, summary):
+        """
+        Classify movie genres using local Ollama LLM.
+
+        Args:
+            title (str): Movie title
+            summary (str): Movie summary
+
+        Returns:
+            tuple: (predicted_genres, raw_response)
+        """
+        url = "http://localhost:11434/api/generate"
+
+        prompt = f"""You are a movie genre classifier. Given a movie title and summary, your task is to identify the most appropriate genres for the movie.
+
+Movie Title: {title}
+Movie Summary: {summary}
+
+Output ONLY a comma-separated list of genres (e.g., "Drama, Thriller, Mystery").
+Do not include any explanations, just return the genres.
+Be specific and try to match standard movie genres like Action, Comedy, Drama, Horror, Sci-Fi, Fantasy, Romance, Thriller, Mystery, Adventure, Animation, Documentary, etc.
+Do not prefix with phrases like "Genres:", just list the genres directly.
+"""
+
+        try:
+            response = requests.post(
+                url,
+                json={
+                    "model": "llama3",
+                    "prompt": prompt,
+                    "stream": False
+                },
+                timeout=60
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                genres_text = result.get('response', '').strip()
+                predicted_genres = [genre.strip() for genre in genres_text.split(',')]
+                return predicted_genres, genres_text
+            else:
+                return [], f"Error: {response.status_code} - {response.text}"
+
+        except requests.exceptions.RequestException as e:
+            return [], f"Error connecting to Ollama: {str(e)}"
+
+    def compare_genres(actual_genres, predicted_genres):
+        """
+        Compare predicted genres with actual genres and determine if there's a match.
+
+        Args:
+            actual_genres (list): List of actual genres
+            predicted_genres (list): List of predicted genres
+
+        Returns:
+            tuple: (matches, non_matches, match_percentage)
+        """
+        actual_lower = [g.lower() for g in actual_genres]
+        predicted_lower = [g.lower() for g in predicted_genres]
+
+        matches = [g for g in predicted_lower if g in actual_lower]
+        non_matches = [g for g in predicted_lower if g not in actual_lower]
+
+        if predicted_lower:
+            match_percentage = (len(matches) / len(predicted_lower)) * 100
+        else:
+            match_percentage = 0
+
+        return matches, non_matches, match_percentage
+
+    def verify_with_llm(actual_genres, predicted_genres):
+        """
+        Ask the LLM to verify if the predicted genres match the actual genres.
+
+        Args:
+            actual_genres (list): List of actual genres
+            predicted_genres (list): List of predicted genres
+
+        Returns:
+            tuple: (is_match, explanation)
+        """
+        url = "http://localhost:11434/api/generate"
+
+        prompt = f"""Compare these two lists of movie genres and determine if the predicted genres are accurate.
+
+Actual Genres: {', '.join(actual_genres)}
+Predicted Genres: {', '.join(predicted_genres)}
+
+Respond with either "YES" or "NO" followed by a brief explanation on a new line.
+- If most of the predicted genres appear in the actual genres, respond with "YES".
+- If few or none of the predicted genres appear in the actual genres, respond with "NO".
+"""
+
+        try:
+            response = requests.post(
+                url,
+                json={
+                    "model": "llama3",
+                    "prompt": prompt,
+                    "stream": False
+                },
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                verification = result.get('response', '').strip()
+
+                is_match = verification.upper().startswith("YES")
+
+                return is_match, verification
+            else:
+                return False, f"Error: {response.status_code} - {response.text}"
+
+        except requests.exceptions.RequestException as e:
+            return False, f"Error connecting to Ollama: {str(e)}"
+
+    if 'movie_title' not in st.session_state:
+        st.session_state.movie_title = ""
+        st.session_state.movie_summary = ""
+        st.session_state.actual_genres = []
+        st.session_state.predicted_genres = []
+        st.session_state.comparison_result = None
+        st.session_state.verification_result = None
+
+    if st.button("🔄 Shuffle Movie"):
+        with st.spinner("Selecting a random movie..."):
+            st.session_state.movie_title, st.session_state.movie_summary, st.session_state.actual_genres = get_random_movie_with_summary()
+            st.session_state.predicted_genres = []
+            st.session_state.comparison_result = None
+            st.session_state.verification_result = None
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Movie Information")
+        st.markdown(f"**Title:** {st.session_state.movie_title}")
+
+        st.text_area(
+            "Movie Summary",
+            value=st.session_state.movie_summary,
+            height=250,
+            disabled=True
+        )
+
+    with col2:
+        st.subheader("Genre Analysis")
+
+        actual_genres_str = ", ".join(st.session_state.actual_genres) if st.session_state.actual_genres else "No genres available"
+        st.text_area(
+            "Actual Genres (from Database)",
+            value=actual_genres_str,
+            height=80,
+            disabled=True
+        )
+
+        if st.session_state.movie_title and not st.session_state.predicted_genres:
+            with st.spinner("Classifying with LLM..."):
+                st.session_state.predicted_genres, raw_response = classify_with_llm(
+                    st.session_state.movie_title,
+                    st.session_state.movie_summary
+                )
+
+                if st.session_state.predicted_genres:
+                    matches, non_matches, match_percentage = compare_genres(
+                        st.session_state.actual_genres,
+                        st.session_state.predicted_genres
+                    )
+                    st.session_state.comparison_result = (matches, non_matches, match_percentage)
+
+                    is_match, explanation = verify_with_llm(
+                        st.session_state.actual_genres,
+                        st.session_state.predicted_genres
+                    )
+                    st.session_state.verification_result = (is_match, explanation)
+
+        predicted_genres_str = ", ".join(st.session_state.predicted_genres) if st.session_state.predicted_genres else "No predictions yet"
+        st.text_area(
+            "Predicted Genres (from LLM)",
+            value=predicted_genres_str,
+            height=80,
+            disabled=True
+        )
+
+        if st.session_state.comparison_result:
+            matches, non_matches, match_percentage = st.session_state.comparison_result
+
+            st.markdown("#### Comparison Results")
+            if matches:
+                st.markdown(f"✅ **Matching genres:** {', '.join(matches)}")
+            if non_matches:
+                st.markdown(f"❌ **Non-matching genres:** {', '.join(non_matches)}")
+
+            st.progress(match_percentage / 100)
+            st.markdown(f"**Match accuracy:** {match_percentage:.1f}%")
+
+            if st.session_state.verification_result:
+                is_match, explanation = st.session_state.verification_result
+
+                st.markdown("#### LLM Verification")
+                if is_match:
+                    st.success(explanation)
+                else:
+                    st.error(explanation)
+
+    # Instructions and information about the classification
+    with st.expander("ℹ️ About this Classification"):
+        st.markdown("""
+        ### How it works
+        
+        This page uses a local LLM (Large Language Model) to classify movie genres based on their summaries:
+        
+        1. **Random Selection**: Click "Shuffle Movie" to select a random movie from the dataset.
+        2. **LLM Classification**: The system automatically sends the movie title and summary to a local LLM to predict genres.
+        3. **Comparison**: The predicted genres are compared with the actual genres from the database.
+        4. **Verification**: A second LLM query verifies if the predictions match the actual genres.
+        
+        ### Prerequisites
+        
+        To use this feature, you need:
+        
+        - [Ollama](https://ollama.ai/) installed and running locally
+        - A small language model like `llama3` or `mistral` pulled into Ollama
+        
+        Run these commands to get started:
+        ```bash
+        # Install Ollama (if not already installed)
+        curl -fsSL https://ollama.ai/install.sh | sh
+        
+        # Pull a small model
+        ollama pull llama3
+        ```
+        
+        ### Note
+        
+        Classification accuracy depends on the model used and the quality of the movie summaries.
+        """)

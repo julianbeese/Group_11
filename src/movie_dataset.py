@@ -10,6 +10,7 @@ It includes functionality to:
 - Analyze actor height distributions with optional visualization
 - Analyze movie releases by year and genre
 - Analyze actor birth statistics by year or month
+- Get random movies with their summaries and genres for LLM classification
 
 The data is expected to be in the 'data' directory relative to the script location.
 """
@@ -18,6 +19,7 @@ import ast
 from collections import Counter
 import datetime
 from pathlib import Path
+import random
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -87,6 +89,18 @@ class MovieDataset:
                 names=expected_columns,
                 low_memory=False,
             )
+
+            try:
+                self.plot_summaries = pd.read_csv(
+                    EXTRACTED_DIR / "plot_summaries.txt",
+                    sep="\t",
+                    header=None,
+                    names=["movie_id", "summary"],
+                    encoding="utf-8"
+                )
+            except FileNotFoundError:
+                print("Plot summaries file not found. Some functionality will be limited.")
+                self.plot_summaries = pd.DataFrame(columns=["movie_id", "summary"])
 
             print("Datasets loaded successfully.")
 
@@ -303,3 +317,48 @@ class MovieDataset:
             return self.ages("Y")
 
         return result
+
+    def get_random_movie(self):
+        """
+        Get a random movie with its summary and genres.
+
+        Returns:
+            dict: Dictionary containing movie title, summary, and genres
+                  or None if no suitable movie is found.
+        """
+        # Filter movies that have both genres and summaries
+        if self.plot_summaries.empty:
+            print("Plot summaries not available")
+            return None
+
+        movies_with_summaries = pd.merge(
+            self.movie_metadata,
+            self.plot_summaries,
+            on="movie_id",
+            how="inner"
+        )
+
+        movies_with_summaries = movies_with_summaries.dropna(subset=["genres"])
+
+        if movies_with_summaries.empty:
+            return None
+
+        random_movie = movies_with_summaries.sample(1).iloc[0]
+
+        genres_list = []
+        try:
+            if isinstance(random_movie["genres"], dict):
+                genre_dict = random_movie["genres"]
+            else:
+                genre_dict = ast.literal_eval(random_movie["genres"])
+            genres_list = list(genre_dict.values())
+        except (ValueError, SyntaxError) as e:
+            print(f"Error parsing genres: {e}")
+            genres_list = []
+
+        return {
+            "title": random_movie["title"],
+            "summary": random_movie["summary"],
+            "genres": genres_list,
+            "movie_id": random_movie["movie_id"]
+        }
