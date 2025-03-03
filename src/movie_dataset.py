@@ -8,12 +8,15 @@ It includes functionality to:
 - Analyze movie genre frequencies
 - Calculate actor counts per movie
 - Analyze actor height distributions with optional visualization
+- Analyze movie releases by year and genre
+- Analyze actor birth statistics by year or month
 
 The data is expected to be in the 'data' directory relative to the script location.
 """
 
 import ast
 from collections import Counter
+import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -190,3 +193,113 @@ class MovieDataset:
             plt.show()
 
         return df
+
+    def releases(self, genre=None):
+        """
+        Calculate the number of movies released per year, optionally filtered by genre.
+
+        Args:
+            genre (str, optional): Genre to filter by. If None, all movies are included.
+                                   Defaults to None.
+
+        Returns:
+            pd.DataFrame: DataFrame with columns "Year" and "Movie_Count" showing the
+                          number of movies released per year.
+        """
+        df = self.movie_metadata.copy()
+
+        df["release_year"] = pd.to_numeric(
+            df["release_date"].str.split("-").str[0],
+            errors="coerce"
+        )
+
+        df = df.dropna(subset=["release_year"])
+        df["release_year"] = df["release_year"].astype(int)
+
+        if genre is not None:
+            filtered_movies = []
+
+            for idx, row in df.iterrows():
+                if pd.isna(row["genres"]):
+                    continue
+
+                try:
+                    if isinstance(row["genres"], dict):
+                        genre_dict = row["genres"]
+                    else:
+                        genre_dict = ast.literal_eval(row["genres"])
+
+                    if genre in genre_dict.values():
+                        filtered_movies.append(idx)
+                except (ValueError, SyntaxError):
+                    continue
+
+            df = df.loc[filtered_movies]
+
+        year_counts = df["release_year"].value_counts().reset_index()
+        year_counts.columns = ["Year", "Movie_Count"]
+
+        year_counts = year_counts.sort_values("Year").reset_index(drop=True)
+
+        return year_counts
+
+    def get_top_genres(self, n=10):
+        """
+        Get the top n movie genres from the dataset.
+
+        Args:
+            n (int, optional): Number of top genres to return. Defaults to 10.
+
+        Returns:
+            list: List of the n most common genres.
+        """
+        genre_counts = self.movie_type(n)
+        return genre_counts["Genre"].tolist()
+
+    def ages(self, time_unit="Y"):
+        """
+        Calculate actor birth statistics by year or month.
+
+        Args:
+            time_unit (str, optional): Time unit for grouping births.
+                                      "Y" for year, "M" for month. Defaults to "Y".
+
+        Returns:
+            pd.DataFrame: DataFrame with birth statistics according to the specified time unit.
+        """
+        df = self.character_metadata.copy()
+
+        df = df.dropna(subset=["actor_dob"])
+
+        if time_unit == "Y":
+            df["birth_year"] = pd.to_datetime(df["actor_dob"], errors="coerce").dt.year
+
+            df = df.dropna(subset=["birth_year"])
+
+            birth_counts = df["birth_year"].value_counts().reset_index()
+            birth_counts.columns = ["Year", "Birth_Count"]
+
+            result = birth_counts.sort_values("Year").reset_index(drop=True)
+
+        elif time_unit == "M":
+            df["birth_month"] = pd.to_datetime(df["actor_dob"], errors="coerce").dt.month
+
+            df = df.dropna(subset=["birth_month"])
+
+            birth_counts = df["birth_month"].value_counts().reset_index()
+            birth_counts.columns = ["Month", "Birth_Count"]
+
+            result = birth_counts.sort_values("Month").reset_index(drop=True)
+
+            month_names = {
+                1: "January", 2: "February", 3: "March", 4: "April",
+                5: "May", 6: "June", 7: "July", 8: "August",
+                9: "September", 10: "October", 11: "November", 12: "December"
+            }
+            result["Month_Name"] = result["Month"].map(month_names)
+
+        else:
+            print(f"Invalid time unit '{time_unit}'. Defaulting to Year.")
+            return self.ages("Y")
+
+        return result
