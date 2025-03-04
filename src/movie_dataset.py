@@ -113,6 +113,7 @@ class MovieDataset:
         if not isinstance(n, int):
             raise ValueError("n must be an integer.")
 
+        # Parse genres and count occurrences
         for item in self.movie_metadata["genres"]:
             if pd.isna(item):
                 continue
@@ -170,18 +171,16 @@ class MovieDataset:
             raise ValueError("Height values must be numerical.")
 
         df = self.character_metadata.copy()
-
         df["actor_height"] = pd.to_numeric(df["actor_height"], errors="coerce")
 
+        # Drop NaN values and convert height from meters to centimeters if necessary
         df = df.dropna(subset=["actor_height"])
-
         meter_mask = df["actor_height"] < 3.0
         df.loc[meter_mask, "actor_height"] = df.loc[meter_mask, "actor_height"] * 100
-
         df["actor_height"] = df["actor_height"].round(1)
 
+        # Apply filters for height and gender
         df = df[(df["actor_height"] >= min_height) & (df["actor_height"] <= max_height)]
-
         if gender != "All":
             df = df[df["actor_gender"] == gender]
 
@@ -207,12 +206,7 @@ class MovieDataset:
                           number of movies released per year.
         """
         df = self.movie_metadata.copy()
-
-        df["release_year"] = pd.to_numeric(
-            df["release_date"].str.split("-").str[0],
-            errors="coerce"
-        )
-
+        df["release_year"] = pd.to_numeric(df["release_date"].str.split("-").str[0], errors="coerce")
         df = df.dropna(subset=["release_year"])
         df["release_year"] = df["release_year"].astype(int)
 
@@ -268,7 +262,6 @@ class MovieDataset:
             pd.DataFrame: DataFrame with birth statistics according to the specified time unit.
         """
         df = self.character_metadata.copy()
-
         df = df.dropna(subset=["actor_dob"])
 
         if time_unit == "Y":
