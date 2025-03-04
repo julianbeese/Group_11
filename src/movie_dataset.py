@@ -10,6 +10,7 @@ It includes functionality to:
 - Analyze actor height distributions with optional visualization
 - Analyze movie releases by year and genre
 - Analyze actor birth statistics by year or month
+- Get random movies with their summaries and genres for LLM classification
 
 The data is expected to be in the 'data' directory relative to the script location.
 """
@@ -18,6 +19,7 @@ import ast
 from collections import Counter
 import datetime
 from pathlib import Path
+import random
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -87,6 +89,18 @@ class MovieDataset:
                 names=expected_columns,
                 low_memory=False,
             )
+
+            try:
+                self.plot_summaries = pd.read_csv(
+                    EXTRACTED_DIR / "plot_summaries.txt",
+                    sep="\t",
+                    header=None,
+                    names=["movie_id", "summary"],
+                    encoding="utf-8"
+                )
+            except FileNotFoundError:
+                print("Plot summaries file not found. Some functionality will be limited.")
+                self.plot_summaries = pd.DataFrame(columns=["movie_id", "summary"])
 
             print("Datasets loaded successfully.")
 
@@ -303,3 +317,134 @@ class MovieDataset:
             return self.ages("Y")
 
         return result
+
+    def get_random_movie(self):
+        """
+        Get a random movie with its genres, actors, and a generated summary based on title and genres.
+
+        Returns:
+            dict: Dictionary containing movie title, actors, genres, and a generated summary
+                  or None if no suitable movie is found.
+        """
+        movie_df = self.movie_metadata.copy()
+
+        movie_df = movie_df.dropna(subset=["genres"])
+
+        if movie_df.empty:
+            print("No movies found with genres")
+            return None
+
+        random_movie = movie_df.sample(1).iloc[0]
+        movie_id = random_movie["movie_id"]
+        movie_title = random_movie["title"]
+
+        release_year = ""
+        if not pd.isna(random_movie["release_date"]):
+            try:
+                release_year = random_movie["release_date"].split("-")[0]
+            except (AttributeError, IndexError):
+                pass
+
+        genres_list = []
+        try:
+            if isinstance(random_movie["genres"], dict):
+                genre_dict = random_movie["genres"]
+            else:
+                genre_dict = ast.literal_eval(random_movie["genres"])
+            genres_list = list(genre_dict.values())
+        except (ValueError, SyntaxError) as e:
+            print(f"Error parsing genres: {e}")
+            genres_list = []
+
+        actors = []
+        try:
+            movie_characters = self.character_metadata[
+                self.character_metadata["freebase_movie_id"] == movie_id
+                ]
+
+            movie_characters = movie_characters.sort_values("actor_name")
+
+            actors = movie_characters["actor_name"].dropna().head(5).tolist()
+        except Exception as e:
+            print(f"Error finding actors: {e}")
+
+        summary = self._generate_summary(movie_title, release_year, genres_list, actors)
+
+        movie_info = {
+            "title": movie_title,
+            "summary": summary,
+            "actors": actors,
+            "genres": genres_list,
+            "movie_id": movie_id,
+            "release_year": release_year
+        }
+
+        return movie_info
+
+    def _generate_summary(self, title, year, genres, actors):
+        """
+        Generate a summary based on movie title, year, genres, and actors.
+
+        Args:
+            title (str): Movie title
+            year (str): Release year
+            genres (list): List of genres
+            actors (list): List of actors
+
+        Returns:
+            str: Generated summary
+        """
+        genres_text = ", ".join(genres) if genres else "unknown genre"
+        actors_text = ", ".join(actors) if actors else "unknown cast"
+        year_text = f" ({year})" if year else ""
+
+        summary = f"{title}{year_text} is a {genres_text} film"
+
+        if actors:
+            summary += f" starring {actors_text}"
+
+        if "Comedy" in genres or "comedy" in [g.lower() for g in genres]:
+            summary += ". The film features humorous situations and witty dialogue that entertain audiences."
+        elif "Horror" in genres or "horror" in [g.lower() for g in genres]:
+            summary += ". The movie creates an atmosphere of fear and suspense to thrill viewers."
+        elif "Drama" in genres or "drama" in [g.lower() for g in genres]:
+            summary += ". The story explores complex characters and emotional themes."
+        elif "Action" in genres or "action" in [g.lower() for g in genres]:
+            summary += ". The film features exciting sequences with physical feats and stunts."
+        elif "Documentary" in genres or "documentary" in [g.lower() for g in genres]:
+            summary += ". The film presents real-life events and issues through factual information."
+        elif "Romance" in genres or "romance" in [g.lower() for g in genres]:
+            summary += ". The story focuses on the romantic relationships between characters."
+        elif "Thriller" in genres or "thriller" in [g.lower() for g in genres]:
+            summary += ". The movie builds suspense and tension to keep viewers on the edge of their seats."
+        elif "Science Fiction" in genres or "sci-fi" in [g.lower() for g in genres] or "science fiction" in [g.lower()
+                                                                                                             for g in
+                                                                                                             genres]:
+            summary += ". The story explores futuristic concepts, advanced technology, or life in other worlds."
+        else:
+            summary += ". The film tells a compelling story that engages viewers from beginning to end."
+
+        return summary
+
+    def load_plot_summaries(self):
+        """
+        Return the plot summaries DataFrame.
+
+        Returns:
+            pd.DataFrame: DataFrame containing movie_id and summary columns
+        """
+        if hasattr(self, 'plot_summaries'):
+            return self.plot_summaries
+        else:
+            try:
+                self.plot_summaries = pd.read_csv(
+                    EXTRACTED_DIR / "plot_summaries.txt",
+                    sep="\t",
+                    header=None,
+                    names=["movie_id", "summary"],
+                    encoding="utf-8"
+                )
+                return self.plot_summaries
+            except FileNotFoundError:
+                print("Plot summaries file not found.")
+                return pd.DataFrame(columns=["movie_id", "summary"])
