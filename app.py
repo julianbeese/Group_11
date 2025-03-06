@@ -29,6 +29,7 @@ import time
 
 from src.movie_dataset import MovieDataset
 
+@st.cache_data
 
 def load_dataset():
     """
@@ -168,7 +169,7 @@ elif page == "Chronological Analysis":
     # --- SECTION 1: Movie Releases by Year ---
     st.header("Movie Releases by Year")
 
-    top_genres = movie_data.get_top_genres(10)
+    top_genres = movie_data.get_top_genres()
     genre_options = ["All"] + top_genres
 
     selected_genre = st.selectbox(
