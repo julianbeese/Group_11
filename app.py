@@ -29,7 +29,8 @@ import time
 
 from src.movie_dataset import MovieDataset
 
-# Load data
+@st.cache_data
+
 def load_dataset():
     """
     Initialize the MovieDataset class and handle potential loading errors.
@@ -197,7 +198,6 @@ elif page == "Chronological Analysis":
     # Get top 10 movie genres
     top_genres = movie_data.get_top_genres(10)
 
-    # Add option "All" to allow viewing all movies regardless of genre
     genre_options = ["All"] + top_genres
 
     # Dropdown to filter movies by genre
