@@ -46,40 +46,39 @@ class MovieDataset:
     def _load_data(self):
         """
         Load movie and character metadata from TSV files into DataFrames.
-
-        Handles potential file loading errors and prints diagnostic information.
+        Handles potential file loading errors and ensures attributes are always initialized.
         """
+        # Initialize with empty DataFrames to prevent AttributeError
+        self.movie_metadata = pd.DataFrame(columns=[
+            "movie_id", "title", "release_date", "revenue",
+            "runtime", "languages", "countries", "genres"
+        ])
+
+        self.character_metadata = pd.DataFrame(columns=[
+            "wiki_character_id", "freebase_movie_id", "release_date",
+            "character_name", "actor_dob", "actor_gender", "actor_height",
+            "actor_ethnicity", "actor_name", "actor_age_at_movie_release",
+            "freebase_character_map_1", "freebase_character_map_2", "freebase_character_map_3"
+        ])
+
+        self.plot_summaries = pd.DataFrame(columns=["movie_id", "summary"])
+
         try:
             self.movie_metadata = pd.read_csv(
                 EXTRACTED_DIR / "movie.metadata.tsv",
                 sep="\t",
                 header=None,
                 names=[
-                    "movie_id",
-                    "title",
-                    "release_date",
-                    "revenue",
-                    "runtime",
-                    "languages",
-                    "countries",
-                    "genres",
+                    "movie_id", "title", "release_date", "revenue",
+                    "runtime", "languages", "countries", "genres"
                 ],
             )
 
             expected_columns = [
-                "wiki_character_id",
-                "freebase_movie_id",
-                "release_date",
-                "character_name",
-                "actor_dob",
-                "actor_gender",
-                "actor_height",
-                "actor_ethnicity",
-                "actor_name",
-                "actor_age_at_movie_release",
-                "freebase_character_map_1",
-                "freebase_character_map_2",
-                "freebase_character_map_3",
+                "wiki_character_id", "freebase_movie_id", "release_date",
+                "character_name", "actor_dob", "actor_gender", "actor_height",
+                "actor_ethnicity", "actor_name", "actor_age_at_movie_release",
+                "freebase_character_map_1", "freebase_character_map_2", "freebase_character_map_3"
             ]
 
             self.character_metadata = pd.read_csv(
@@ -100,12 +99,13 @@ class MovieDataset:
                 )
             except FileNotFoundError:
                 print("Plot summaries file not found. Some functionality will be limited.")
-                self.plot_summaries = pd.DataFrame(columns=["movie_id", "summary"])
 
             print("Datasets loaded successfully.")
 
         except FileNotFoundError as e:
             print(f"Error loading dataset: {e}")
+            print("Make sure the data files are present in the 'data' directory.")
+            print("If not, they should be automatically downloaded via src/__init__.py")
 
     def movie_type(self, n=10):
         """
