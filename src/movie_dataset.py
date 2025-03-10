@@ -17,9 +17,7 @@ The data is expected to be in the 'data' directory relative to the script locati
 
 import ast
 from collections import Counter
-import datetime
 from pathlib import Path
-import random
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -41,6 +39,7 @@ class MovieDataset:
         """
         Initialize the MovieDataset by loading the data.
         """
+        self.plot_summaries = None
         self._load_data()
 
     def _load_data(self):
@@ -220,7 +219,8 @@ class MovieDataset:
                           number of movies released per year.
         """
         df = self.movie_metadata.copy()
-        df["release_year"] = pd.to_numeric(df["release_date"].str.split("-").str[0], errors="coerce")
+        df["release_year"] = pd.to_numeric(df["release_date"].str.split("-").str[0],
+                                           errors="coerce")
         df = df.dropna(subset=["release_year"])
         df["release_year"] = df["release_year"].astype(int)
 
@@ -313,7 +313,7 @@ class MovieDataset:
 
     def get_random_movie(self):
         """
-        Get a random movie with its genres, actors, and a generated summary based on title and genres.
+        Get random movie with its genres, actors, and a generated summary based on title and genres.
 
         Returns:
             dict: Dictionary containing movie title, actors, genres, and a generated summary
@@ -358,7 +358,7 @@ class MovieDataset:
             movie_characters = movie_characters.sort_values("actor_name")
 
             actors = movie_characters["actor_name"].dropna().head(5).tolist()
-        except Exception as e:
+        except (KeyError, TypeError, AttributeError, ValueError) as e:
             print(f"Error finding actors: {e}")
 
         summary = self._generate_summary(movie_title, release_year, genres_list, actors)
@@ -397,25 +397,26 @@ class MovieDataset:
             summary += f" starring {actors_text}"
 
         if "Comedy" in genres or "comedy" in [g.lower() for g in genres]:
-            summary += ". The film features humorous situations and witty dialogue that entertain audiences."
+            summary += (". The film features humorous situations and witty dialogue "
+                        "that entertain audiences.")
         elif "Horror" in genres or "horror" in [g.lower() for g in genres]:
-            summary += ". The movie creates an atmosphere of fear and suspense to thrill viewers."
+            summary += ". The movie creates an atmosphere of fear and suspense."
         elif "Drama" in genres or "drama" in [g.lower() for g in genres]:
             summary += ". The story explores complex characters and emotional themes."
         elif "Action" in genres or "action" in [g.lower() for g in genres]:
-            summary += ". The film features exciting sequences with physical feats and stunts."
+            summary += ". The film features exciting sequences with physical feats."
         elif "Documentary" in genres or "documentary" in [g.lower() for g in genres]:
-            summary += ". The film presents real-life events and issues through factual information."
+            summary += ". The film presents real-life events through factual content."
         elif "Romance" in genres or "romance" in [g.lower() for g in genres]:
-            summary += ". The story focuses on the romantic relationships between characters."
+            summary += ". The story focuses on romantic relationships between characters."
         elif "Thriller" in genres or "thriller" in [g.lower() for g in genres]:
-            summary += ". The movie builds suspense and tension to keep viewers on the edge of their seats."
-        elif "Science Fiction" in genres or "sci-fi" in [g.lower() for g in genres] or "science fiction" in [g.lower()
-                                                                                                             for g in
-                                                                                                             genres]:
-            summary += ". The story explores futuristic concepts, advanced technology, or life in other worlds."
+            summary += ". The movie builds suspense and tension throughout."
+        elif ("Science Fiction" in genres or "sci-fi" in [g.lower() for g in genres] or
+              "science fiction" in [g.lower() for g in genres]):
+            summary += (". The story explores futuristic concepts, advanced technology, "
+                        "or life in other worlds.")
         else:
-            summary += ". The film tells a compelling story that engages viewers from beginning to end."
+            summary += ". The film tells a compelling story that engages viewers."
 
         return summary
 
@@ -428,16 +429,17 @@ class MovieDataset:
         """
         if hasattr(self, 'plot_summaries'):
             return self.plot_summaries
-        else:
-            try:
-                self.plot_summaries = pd.read_csv(
-                    EXTRACTED_DIR / "plot_summaries.txt",
-                    sep="\t",
-                    header=None,
-                    names=["movie_id", "summary"],
-                    encoding="utf-8"
-                )
-                return self.plot_summaries
-            except FileNotFoundError:
-                print("Plot summaries file not found.")
-                return pd.DataFrame(columns=["movie_id", "summary"])
+
+        try:
+            self.plot_summaries = pd.read_csv(
+                EXTRACTED_DIR / "plot_summaries.txt",
+                sep="\t",
+                header=None,
+                names=["movie_id", "summary"],
+                encoding="utf-8"
+            )
+        except FileNotFoundError:
+            print("Plot summaries file not found.")
+            self.plot_summaries = pd.DataFrame(columns=["movie_id", "summary"])
+
+        return self.plot_summaries

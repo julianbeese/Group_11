@@ -19,14 +19,10 @@ Pages:
    - Compares LLM classifications with actual genres from the database
 """
 
-import ast
+import requests
 import numpy as np
 import pandas as pd
-import random
-import requests
 import streamlit as st
-import time
-
 from src.movie_dataset import MovieDataset
 
 @st.cache_data
@@ -62,7 +58,8 @@ except (FileNotFoundError, pd.errors.EmptyDataError, ValueError) as load_error:
 
 # Create navigation in sidebar
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Main Dashboard", "Chronological Analysis", "Genre Classification"])
+page = st.sidebar.radio("Go to", ["Main Dashboard", "Chronological Analysis",
+                                  "Genre Classification"])
 
 
 # --- MAIN DASHBOARD PAGE ---
@@ -149,7 +146,8 @@ if page == "Main Dashboard":
 
             # Display number of records found for selected criteria
             st.write(
-                f"Actor Height Distribution for {selected_gender} - {len(df_actor_heights)} records found"
+                f"Actor Height Distribution for {selected_gender} - {len(df_actor_heights)} "
+                f"records found"
             )
 
             # Extract height values from the dataset
@@ -217,7 +215,8 @@ elif page == "Chronological Analysis":
             releases_data = movie_data.releases(genre=genre_filter)
 
             # Display the selected genre filter
-            st.write(f"Showing movie releases for: {'All Genres' if genre_filter is None else genre_filter}")
+            st.write(f"Showing movie releases for: "
+                     f"{'All Genres' if genre_filter is None else genre_filter}")
 
             if not releases_data.empty:
                 # Display bar chart of movie releases by year
@@ -238,7 +237,7 @@ elif page == "Chronological Analysis":
                 # Display warning if no data is available
                 st.warning("No data available for the selected genre.")
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             # Error handling
             st.error(f"Error analyzing movie releases: {e}")
 
@@ -253,13 +252,13 @@ elif page == "Chronological Analysis":
     )
 
     # Convert time unit selection to appropiate format
-    time_unit_code = "Y" if time_unit == "Year" else "M"
+    TIME_UNIT_CODE = "Y" if time_unit == "Year" else "M"
 
     # Display spinner while loading data
     with st.spinner("Loading birth statistics..."):
         try:
             # Retrieve actor birth data based on selected time unit and display bar chart
-            birth_data = movie_data.ages(time_unit=time_unit_code)
+            birth_data = movie_data.ages(time_unit=TIME_UNIT_CODE)
 
             if not birth_data.empty:
                 if time_unit == "Year":
@@ -274,7 +273,8 @@ elif page == "Chronological Analysis":
                     peak_year = birth_data.loc[birth_data["Birth_Count"].idxmax()]
 
                     st.write(f"Actor birth years range from {earliest_year} to {latest_year}")
-                    st.write(f"Most births: {peak_year['Year']} with {peak_year['Birth_Count']} actors")
+                    st.write(f"Most births: {peak_year['Year']} with "
+                             f"{peak_year['Birth_Count']} actors")
 
                 else:
                     # Prepare data for displaying actor births by month and display as bar chart
@@ -287,13 +287,16 @@ elif page == "Chronological Analysis":
                     )
 
                     peak_month = birth_data.loc[birth_data["Birth_Count"].idxmax()]
-                    st.write(f"Most births: {peak_month['Month_Name']} with {peak_month['Birth_Count']} actors")
+                    st.write(
+                        f"Most births: {peak_month['Month_Name']} with "
+                        f"{peak_month['Birth_Count']} actors"
+                    )
 
             else:
                 # Display warning if no data is available
                 st.warning("No birth data available.")
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
 
             # Handle errors and display error message
             st.error(f"Error analyzing birth statistics: {e}")
@@ -322,7 +325,8 @@ elif page == "Genre Classification":
         year_info = f"Release Year: {release_year}\n" if release_year else ""
         cast_info = f"Cast: {', '.join(actors)}\n" if actors else ""
 
-        prompt = f"""You are a movie genre classifier. Given information about a movie, your task is to predict its genres.
+        prompt = f"""You are a movie genre classifier.
+        Given information about a movie, your task is to predict its genres.)
 
 Movie Title: {title}
 {year_info}{cast_info}Movie Description: {summary}
@@ -350,19 +354,18 @@ Do not prefix with phrases like "Genres:", just list the genres directly.
                 genres_text = result.get('response', '').strip()
                 predicted_genres = [genre.strip() for genre in genres_text.split(',')]
                 return predicted_genres, genres_text
-            else:
-                return [], f"Error: {response.status_code} - {response.text}"
+            return [], f"Error: {response.status_code} - {response.text}"
 
         except requests.exceptions.RequestException as e:
             return [], f"Error connecting to Ollama: {str(e)}"
 
 
-    def verify_genres_with_llm(actual_genres, predicted_genres):
+    def verify_genres_with_llm(genres_actual, predicted_genres):
         """
         Ask the LLM to verify if the predicted genres match the actual genres.
 
         Args:
-            actual_genres (list): List of actual genres
+            genres_actual (list): List of actual genres
             predicted_genres (list): List of predicted genres
 
         Returns:
@@ -370,9 +373,10 @@ Do not prefix with phrases like "Genres:", just list the genres directly.
         """
         url = "http://localhost:11434/api/generate"
 
-        prompt = f"""Compare these two lists of movie genres and determine if the predicted genres are accurate.
+        prompt = f"""Compare these two lists of movie genres
+        and determine if the predicted genres are accurate.
 
-Actual Genres: {', '.join(actual_genres)}
+Actual Genres: {', '.join(genres_actual)}
 Predicted Genres: {', '.join(predicted_genres)}
 
 Respond with either "YES" or "NO" followed by a brief explanation on a new line.
@@ -395,39 +399,38 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
                 result = response.json()
                 verification = result.get('response', '').strip()
 
-                is_match = verification.upper().startswith("YES")
+                llm_is_match = verification.upper().startswith("YES")
 
-                return is_match, verification
-            else:
-                return False, f"Error: {response.status_code} - {response.text}"
+                return llm_is_match, verification
+            return False, f"Error: {response.status_code} - {response.text}"
 
         except requests.exceptions.RequestException as e:
             return False, f"Error connecting to Ollama: {str(e)}"
 
 
-    def compare_genres(actual_genres, predicted_genres):
+    def compare_genres(genres_compare, predicted_genres):
         """
         Compare predicted genres with actual genres and determine if there's a match.
 
         Args:
-            actual_genres (list): List of actual genres
+            genres_compare (list): List of actual genres
             predicted_genres (list): List of predicted genres
 
         Returns:
             tuple: (matches, non_matches, match_percentage)
         """
-        actual_lower = [g.lower() for g in actual_genres]
+        actual_lower = [g.lower() for g in genres_compare]
         predicted_lower = [g.lower() for g in predicted_genres]
 
-        matches = [g for g in predicted_lower if g in actual_lower]
-        non_matches = [g for g in predicted_lower if g not in actual_lower]
+        genres_matches = [g for g in predicted_lower if g in actual_lower]
+        genres_non_matches = [g for g in predicted_lower if g not in actual_lower]
 
         if predicted_lower:
-            match_percentage = (len(matches) / len(predicted_lower)) * 100
+            genres_match_percentage = (len(genres_matches) / len(predicted_lower)) * 100
         else:
-            match_percentage = 0
+            genres_match_percentage = 0
 
-        return matches, non_matches, match_percentage
+        return genres_matches, genres_non_matches, genres_match_percentage
 
     if 'movie_title' not in st.session_state:
         st.session_state.movie_title = ""
@@ -465,8 +468,8 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
 
         if st.session_state.movie_actors:
             st.markdown("**Cast:**")
-            actors_text = ", ".join(st.session_state.movie_actors)
-            st.markdown(actors_text)
+            ACTORS_TEXT = ", ".join(st.session_state.movie_actors)
+            st.markdown(ACTORS_TEXT)
 
         st.text_area(
             "Movie Description",
@@ -478,13 +481,11 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
     with col2:
         st.subheader("Genre Analysis")
 
-        actual_genres_str = ", ".join(
-            st.session_state.actual_genres) if st.session_state.actual_genres else "No genres available"
+        actual_genres = st.session_state.actual_genres
+        ACTUAL_GENRES_STR = ", ".join(actual_genres) if actual_genres else "No genres available"
+
         st.text_area(
-            "Actual Genres (from Database)",
-            value=actual_genres_str,
-            height=80,
-            disabled=True
+            "Actual Genres (from Database)", value=ACTUAL_GENRES_STR, height=80, disabled=True
         )
 
         if st.session_state.movie_title and not st.session_state.predicted_genres:
@@ -509,11 +510,11 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
                     )
                     st.session_state.verification_result = (is_match, explanation)
 
-        predicted_genres_str = ", ".join(
+        PREDICTED_GENRES_STR = ", ".join(
             st.session_state.predicted_genres) if st.session_state.predicted_genres else "No predictions yet"
         st.text_area(
             "Predicted Genres (from LLM)",
-            value=predicted_genres_str,
+            value=PREDICTED_GENRES_STR,
             height=80,
             disabled=True
         )
