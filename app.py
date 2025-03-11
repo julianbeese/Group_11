@@ -20,14 +20,15 @@ Pages:
 """
 
 import requests
+from typing import Dict, List, Tuple, Optional, Any, Union, cast
 import numpy as np
 import pandas as pd
 import streamlit as st
 from src.movie_dataset import MovieDataset
 
-@st.cache_data
 
-def load_dataset():
+@st.cache_data
+def load_dataset() -> MovieDataset:
     """
     Initialize the MovieDataset class and handle potential loading errors.
 
@@ -50,7 +51,7 @@ st.set_page_config(
 
 # Initializing the class with error handling
 try:
-    movie_data = load_dataset()
+    movie_data: MovieDataset = load_dataset()
 except (FileNotFoundError, pd.errors.EmptyDataError, ValueError) as load_error:
     st.error(f"Error loading dataset: {load_error}")
     st.stop()
@@ -58,8 +59,8 @@ except (FileNotFoundError, pd.errors.EmptyDataError, ValueError) as load_error:
 
 # Create navigation in sidebar
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Main Dashboard", "Chronological Analysis",
-                                  "Genre Classification"])
+page: str = st.sidebar.radio("Go to", ["Main Dashboard", "Chronological Analysis",
+                                   "Genre Classification"])
 
 
 # --- MAIN DASHBOARD PAGE ---
@@ -67,7 +68,7 @@ if page == "Main Dashboard":
     st.title("Movie Data Analysis - Main Dashboard")
 
     # --- SECTION 1: Most Common Movie Types ---
-    def display_movie_types_section(movie_dataset):
+    def display_movie_types_section(movie_dataset: MovieDataset) -> None:
         """
         Display interactive section for analyzing most common movie genres.
 
@@ -78,7 +79,7 @@ if page == "Main Dashboard":
         st.header("Most Common Movie Types")
 
         # Initiate display of plot for most common movie types with error handling
-        num_genres = st.number_input(
+        num_genres: int = st.number_input(
             "Select the Number to Display", min_value=1, max_value=50, step=1, value=10
         )
         try:
@@ -89,7 +90,7 @@ if page == "Main Dashboard":
             st.error(f"Error generating genre counts: {genre_error}")
 
     # --- SECTION 2: Actor Count Histogram ---
-    def display_actor_count_section(movie_dataset):
+    def display_actor_count_section(movie_dataset: MovieDataset) -> None:
         """
         Display histogram of actor counts per movie.
 
@@ -110,7 +111,7 @@ if page == "Main Dashboard":
         )
 
     # --- SECTION 3: Actor Height Distribution ---
-    def display_height_distribution_section(movie_dataset):
+    def display_height_distribution_section(movie_dataset: MovieDataset) -> None:
         """
         Display interactive section for actor height distribution analysis.
         Handles heights stored in meters (e.g., 1.72).
@@ -123,18 +124,18 @@ if page == "Main Dashboard":
         st.header("Actor Height Distribution")
 
         # Get unique gender options from the dataset (including: "All")
-        gender_options = ["All"] + movie_dataset.character_metadata[
+        gender_options: List[str] = ["All"] + movie_dataset.character_metadata[
             "actor_gender"
         ].dropna().astype(str).unique().tolist()
 
         # Allow user to select gender
-        selected_gender = st.selectbox("Select gender:", gender_options)
+        selected_gender: str = st.selectbox("Select gender:", gender_options)
 
         # Update the min/max values to be more appropriate for heights in cm
-        min_height = st.number_input(
+        min_height: int = st.number_input(
             "Minimum height (cm):", min_value=0, max_value=300, value=150
         )
-        max_height = st.number_input(
+        max_height: int = st.number_input(
             "Maximum height (cm):", min_value=0, max_value=300, value=200
         )
 
@@ -151,17 +152,17 @@ if page == "Main Dashboard":
             )
 
             # Extract height values from the dataset
-            heights = df_actor_heights["actor_height"].values
+            heights: np.ndarray = df_actor_heights["actor_height"].values
 
             if len(heights) > 0:
                 # Determine number of bins for the histogram
-                num_bins = min(30, len(heights))
+                num_bins: int = min(30, len(heights))
 
                 # Compute histogram
                 hist, bins = np.histogram(heights, bins=num_bins)
 
                 # Compute bin centers for better visualization
-                bin_centers = (bins[:-1] + bins[1:]) / 2
+                bin_centers: np.ndarray = (bins[:-1] + bins[1:]) / 2
                 bin_centers = np.round(bin_centers, 1)
 
                 # Create dataframe for plotting
@@ -194,25 +195,25 @@ elif page == "Chronological Analysis":
     st.header("Movie Releases by Year")
 
     # Get top 10 movie genres
-    top_genres = movie_data.get_top_genres(10)
+    top_genres: List[str] = movie_data.get_top_genres(10)
 
-    genre_options = ["All"] + top_genres
+    genre_options: List[str] = ["All"] + top_genres
 
     # Dropdown to filter movies by genre
-    selected_genre = st.selectbox(
+    selected_genre: str = st.selectbox(
         "Filter by Genre:",
         genre_options,
         help="Select a genre to filter movies or 'All' to view all movies"
     )
 
     # Determine the genre filter based on user selection
-    genre_filter = None if selected_genre == "All" else selected_genre
+    genre_filter: Optional[str] = None if selected_genre == "All" else selected_genre
 
     # Display a spinner while loading data
     with st.spinner("Loading release data..."):
         try:
             # Retrieve movie release data based on selected genre
-            releases_data = movie_data.releases(genre=genre_filter)
+            releases_data: pd.DataFrame = movie_data.releases(genre=genre_filter)
 
             # Display the selected genre filter
             st.write(f"Showing movie releases for: "
@@ -245,20 +246,20 @@ elif page == "Chronological Analysis":
     st.header("Actor Birth Statistics")
 
     # Dropdown to select time for grouping births
-    time_unit = st.selectbox(
+    time_unit: str = st.selectbox(
         "Group births by:",
         ["Year", "Month"],
         help="Choose whether to group actor births by year or month"
     )
 
     # Convert time unit selection to appropiate format
-    TIME_UNIT_CODE = "Y" if time_unit == "Year" else "M"
+    TIME_UNIT_CODE: str = "Y" if time_unit == "Year" else "M"
 
     # Display spinner while loading data
     with st.spinner("Loading birth statistics..."):
         try:
             # Retrieve actor birth data based on selected time unit and display bar chart
-            birth_data = movie_data.ages(time_unit=TIME_UNIT_CODE)
+            birth_data: pd.DataFrame = movie_data.ages(time_unit=TIME_UNIT_CODE)
 
             if not birth_data.empty:
                 if time_unit == "Year":
@@ -306,7 +307,8 @@ elif page == "Genre Classification":
     st.title("Movie Genre Classification with LLM")
 
 
-    def classify_with_llm(title, summary, actors, release_year=None):
+    def classify_with_llm(title: str, summary: str, actors: List[str],
+                         release_year: Optional[str] = None) -> Tuple[List[str], str]:
         """
         Classify movie genres using local Ollama LLM based on all available movie information.
 
@@ -319,13 +321,13 @@ elif page == "Genre Classification":
         Returns:
             tuple: (predicted_genres, raw_response)
         """
-        url = "http://localhost:11434/api/generate"
+        url: str = "http://localhost:11434/api/generate"
 
         # Build a rich context for the LLM
         year_info = f"Release Year: {release_year}\n" if release_year else ""
         cast_info = f"Cast: {', '.join(actors)}\n" if actors else ""
 
-        prompt = f"""You are a movie genre classifier.
+        prompt: str = f"""You are a movie genre classifier.
         Given information about a movie, your task is to predict its genres.)
 
 Movie Title: {title}
@@ -339,7 +341,7 @@ Do not prefix with phrases like "Genres:", just list the genres directly.
 """
 
         try:
-            response = requests.post(
+            response: requests.Response = requests.post(
                 url,
                 json={
                     "model": "mistral",
@@ -350,9 +352,9 @@ Do not prefix with phrases like "Genres:", just list the genres directly.
             )
 
             if response.status_code == 200:
-                result = response.json()
-                genres_text = result.get('response', '').strip()
-                predicted_genres = [genre.strip() for genre in genres_text.split(',')]
+                result: Dict[str, Any] = response.json()
+                genres_text: str = result.get('response', '').strip()
+                predicted_genres: List[str] = [genre.strip() for genre in genres_text.split(',')]
                 return predicted_genres, genres_text
             return [], f"Error: {response.status_code} - {response.text}"
 
@@ -360,7 +362,8 @@ Do not prefix with phrases like "Genres:", just list the genres directly.
             return [], f"Error connecting to Ollama: {str(e)}"
 
 
-    def verify_genres_with_llm(genres_actual, predicted_genres):
+    def verify_genres_with_llm(genres_actual: List[str],
+                              predicted_genres: List[str]) -> Tuple[bool, str]:
         """
         Ask the LLM to verify if the predicted genres match the actual genres.
 
@@ -371,9 +374,9 @@ Do not prefix with phrases like "Genres:", just list the genres directly.
         Returns:
             tuple: (is_match, explanation)
         """
-        url = "http://localhost:11434/api/generate"
+        url: str = "http://localhost:11434/api/generate"
 
-        prompt = f"""Compare these two lists of movie genres
+        prompt: str = f"""Compare these two lists of movie genres
         and determine if the predicted genres are accurate.
 
 Actual Genres: {', '.join(genres_actual)}
@@ -385,7 +388,7 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
 """
 
         try:
-            response = requests.post(
+            response: requests.Response = requests.post(
                 url,
                 json={
                     "model": "mistral",
@@ -396,10 +399,10 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
             )
 
             if response.status_code == 200:
-                result = response.json()
-                verification = result.get('response', '').strip()
+                result: Dict[str, Any] = response.json()
+                verification: str = result.get('response', '').strip()
 
-                llm_is_match = verification.upper().startswith("YES")
+                llm_is_match: bool = verification.upper().startswith("YES")
 
                 return llm_is_match, verification
             return False, f"Error: {response.status_code} - {response.text}"
@@ -408,7 +411,8 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
             return False, f"Error connecting to Ollama: {str(e)}"
 
 
-    def compare_genres(genres_compare, predicted_genres):
+    def compare_genres(genres_compare: List[str],
+                     predicted_genres: List[str]) -> Tuple[List[str], List[str], float]:
         """
         Compare predicted genres with actual genres and determine if there's a match.
 
@@ -419,16 +423,16 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
         Returns:
             tuple: (matches, non_matches, match_percentage)
         """
-        actual_lower = [g.lower() for g in genres_compare]
-        predicted_lower = [g.lower() for g in predicted_genres]
+        actual_lower: List[str] = [g.lower() for g in genres_compare]
+        predicted_lower: List[str] = [g.lower() for g in predicted_genres]
 
-        genres_matches = [g for g in predicted_lower if g in actual_lower]
-        genres_non_matches = [g for g in predicted_lower if g not in actual_lower]
+        genres_matches: List[str] = [g for g in predicted_lower if g in actual_lower]
+        genres_non_matches: List[str] = [g for g in predicted_lower if g not in actual_lower]
 
         if predicted_lower:
-            genres_match_percentage = (len(genres_matches) / len(predicted_lower)) * 100
+            genres_match_percentage: float = (len(genres_matches) / len(predicted_lower)) * 100
         else:
-            genres_match_percentage = 0
+            genres_match_percentage = 0.0
 
         return genres_matches, genres_non_matches, genres_match_percentage
 
@@ -444,7 +448,7 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
 
     if st.button("🔄 Shuffle Movie"):
         with st.spinner("Selecting a random movie..."):
-            random_movie = movie_data.get_random_movie()
+            random_movie: Optional[Dict[str, Any]] = movie_data.get_random_movie()
             if random_movie:
                 st.session_state.movie_title = random_movie["title"]
                 st.session_state.movie_summary = random_movie["summary"]
@@ -468,7 +472,7 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
 
         if st.session_state.movie_actors:
             st.markdown("**Cast:**")
-            ACTORS_TEXT = ", ".join(st.session_state.movie_actors)
+            ACTORS_TEXT: str = ", ".join(st.session_state.movie_actors)
             st.markdown(ACTORS_TEXT)
 
         st.text_area(
@@ -482,7 +486,7 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
         st.subheader("Genre Analysis")
 
         actual_genres = st.session_state.actual_genres
-        ACTUAL_GENRES_STR = ", ".join(actual_genres) if actual_genres else "No genres available"
+        ACTUAL_GENRES_STR: str = ", ".join(actual_genres) if actual_genres else "No genres available"
 
         st.text_area(
             "Actual Genres (from Database)", value=ACTUAL_GENRES_STR, height=80, disabled=True
@@ -510,7 +514,7 @@ Respond with either "YES" or "NO" followed by a brief explanation on a new line.
                     )
                     st.session_state.verification_result = (is_match, explanation)
 
-        PREDICTED_GENRES_STR = ", ".join(
+        PREDICTED_GENRES_STR: str = ", ".join(
             st.session_state.predicted_genres) if st.session_state.predicted_genres else "No predictions yet"
         st.text_area(
             "Predicted Genres (from LLM)",
