@@ -18,12 +18,14 @@ The data is expected to be in the 'data' directory relative to the script locati
 import ast
 from collections import Counter
 from pathlib import Path
+from typing import Dict, List, Optional, Union, Any, Tuple, cast
 
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
-DATA_DIR = Path("data")
-EXTRACTED_DIR = DATA_DIR
+DATA_DIR: Path = Path("data")
+EXTRACTED_DIR: Path = DATA_DIR
 
 
 class MovieDataset:
@@ -33,16 +35,19 @@ class MovieDataset:
     Attributes:
         movie_metadata (pd.DataFrame): DataFrame containing movie metadata
         character_metadata (pd.DataFrame): DataFrame containing character metadata
+        plot_summaries (pd.DataFrame): DataFrame containing movie plot summaries
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the MovieDataset by loading the data.
         """
-        self.plot_summaries = None
+        self.plot_summaries: Optional[pd.DataFrame] = None
+        self.movie_metadata: pd.DataFrame
+        self.character_metadata: pd.DataFrame
         self._load_data()
 
-    def _load_data(self):
+    def _load_data(self) -> None:
         """
         Load movie and character metadata from TSV files into DataFrames.
         Handles potential file loading errors and ensures attributes are always initialized.
@@ -73,7 +78,7 @@ class MovieDataset:
                 ],
             )
 
-            expected_columns = [
+            expected_columns: List[str] = [
                 "wiki_character_id", "freebase_movie_id", "release_date",
                 "character_name", "actor_dob", "actor_gender", "actor_height",
                 "actor_ethnicity", "actor_name", "actor_age_at_movie_release",
@@ -106,7 +111,7 @@ class MovieDataset:
             print("Make sure the data files are present in the 'data' directory.")
             print("If not, they should be automatically downloaded via src/__init__.py")
 
-    def movie_type(self, n=10):
+    def movie_type(self, n: int = 10) -> pd.DataFrame:
         """
         Calculate the n most common movie genres and their counts.
 
@@ -121,7 +126,7 @@ class MovieDataset:
             TypeError: If n is not an integer.
             ValueError: If n is negative.
         """
-        cnt = Counter()
+        cnt: Counter = Counter()
 
         if not isinstance(n, int):
             raise ValueError("n must be an integer.")
@@ -135,7 +140,7 @@ class MovieDataset:
                 genre_dict = item
             else:
                 try:
-                    genre_dict = ast.literal_eval(item)
+                    genre_dict = cast(Dict[str, str], ast.literal_eval(str(item)))
                 except (ValueError, SyntaxError) as e:
                     print(f"Parsing Error {e}")
                     continue
@@ -145,7 +150,7 @@ class MovieDataset:
         df = pd.DataFrame(list(cnt.items()), columns=["Genre", "Count"])
         return df.nlargest(n, "Count").reset_index(drop=True)
 
-    def actor_count(self):
+    def actor_count(self) -> pd.DataFrame:
         """
         Calculate a histogram of number of actors per movie.
 
@@ -161,8 +166,8 @@ class MovieDataset:
         return df
 
     def actor_distributions(
-        self, gender="All", min_height=0.0, max_height=300.0, plot=False
-    ):
+        self, gender: str = "All", min_height: float = 0.0, max_height: float = 300.0, plot: bool = False
+    ) -> pd.DataFrame:
         """
         Calculate and optionally plot the height distribution of actors.
         Handles height values stored in meters (e.g., 1.72) and converts to cm.
@@ -206,7 +211,7 @@ class MovieDataset:
 
         return df
 
-    def releases(self, genre=None):
+    def releases(self, genre: Optional[str] = None) -> pd.DataFrame:
         """
         Calculate the number of movies released per year, optionally filtered by genre.
 
@@ -225,7 +230,7 @@ class MovieDataset:
         df["release_year"] = df["release_year"].astype(int)
 
         if genre is not None:
-            filtered_movies = []
+            filtered_movies: List[int] = []
 
             for idx, row in df.iterrows():
                 if pd.isna(row["genres"]):
@@ -235,7 +240,7 @@ class MovieDataset:
                     if isinstance(row["genres"], dict):
                         genre_dict = row["genres"]
                     else:
-                        genre_dict = ast.literal_eval(row["genres"])
+                        genre_dict = cast(Dict[str, str], ast.literal_eval(str(row["genres"])))
 
                     if genre in genre_dict.values():
                         filtered_movies.append(idx)
@@ -251,7 +256,7 @@ class MovieDataset:
 
         return year_counts
 
-    def get_top_genres(self, n=10):
+    def get_top_genres(self, n: int = 10) -> List[str]:
         """
         Get the top n movie genres from the dataset.
 
@@ -264,7 +269,7 @@ class MovieDataset:
         genre_counts = self.movie_type(n)
         return genre_counts["Genre"].tolist()
 
-    def ages(self, time_unit="Y"):
+    def ages(self, time_unit: str = "Y") -> pd.DataFrame:
         """
         Calculate actor birth statistics by year or month.
 
@@ -298,7 +303,7 @@ class MovieDataset:
 
             result = birth_counts.sort_values("Month").reset_index(drop=True)
 
-            month_names = {
+            month_names: Dict[int, str] = {
                 1: "January", 2: "February", 3: "March", 4: "April",
                 5: "May", 6: "June", 7: "July", 8: "August",
                 9: "September", 10: "October", 11: "November", 12: "December"
@@ -311,7 +316,7 @@ class MovieDataset:
 
         return result
 
-    def get_random_movie(self):
+    def get_random_movie(self) -> Optional[Dict[str, Any]]:
         """
         Get random movie with its genres, actors, and a generated summary based on title and genres.
 
@@ -331,25 +336,25 @@ class MovieDataset:
         movie_id = random_movie["movie_id"]
         movie_title = random_movie["title"]
 
-        release_year = ""
+        release_year: str = ""
         if not pd.isna(random_movie["release_date"]):
             try:
-                release_year = random_movie["release_date"].split("-")[0]
+                release_year = str(random_movie["release_date"]).split("-")[0]
             except (AttributeError, IndexError):
                 pass
 
-        genres_list = []
+        genres_list: List[str] = []
         try:
             if isinstance(random_movie["genres"], dict):
                 genre_dict = random_movie["genres"]
             else:
-                genre_dict = ast.literal_eval(random_movie["genres"])
+                genre_dict = cast(Dict[str, str], ast.literal_eval(str(random_movie["genres"])))
             genres_list = list(genre_dict.values())
         except (ValueError, SyntaxError) as e:
             print(f"Error parsing genres: {e}")
             genres_list = []
 
-        actors = []
+        actors: List[str] = []
         try:
             movie_characters = self.character_metadata[
                 self.character_metadata["freebase_movie_id"] == movie_id
@@ -363,7 +368,7 @@ class MovieDataset:
 
         summary = self._generate_summary(movie_title, release_year, genres_list, actors)
 
-        movie_info = {
+        movie_info: Dict[str, Any] = {
             "title": movie_title,
             "summary": summary,
             "actors": actors,
@@ -374,7 +379,7 @@ class MovieDataset:
 
         return movie_info
 
-    def _generate_summary(self, title, year, genres, actors):
+    def _generate_summary(self, title: str, year: str, genres: List[str], actors: List[str]) -> str:
         """
         Generate a summary based on movie title, year, genres, and actors.
 
@@ -420,14 +425,14 @@ class MovieDataset:
 
         return summary
 
-    def load_plot_summaries(self):
+    def load_plot_summaries(self) -> pd.DataFrame:
         """
         Return the plot summaries DataFrame.
 
         Returns:
             pd.DataFrame: DataFrame containing movie_id and summary columns
         """
-        if hasattr(self, 'plot_summaries'):
+        if hasattr(self, 'plot_summaries') and self.plot_summaries is not None:
             return self.plot_summaries
 
         try:
