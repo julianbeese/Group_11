@@ -113,3 +113,18 @@ pkill ollama
 ps aux | grep ollama  # Find the process ID
 kill -9 [process_ID]  # Replace with the actual ID
 ```
+
+## 8. Full-Fillment of the SDG Goals
+
+The Text classification in this project, particularly through the analysis of ``movie metadata``, plot summaries, and actor demographics, can contribute to several of the United Nations' **Sustainable Development Goals (SDGs)**.
+
+### **SDG 4: Quality Education**
+Text classification can assist in creating educational resources that can be used in classrooms or research settings. By analyzing the genre and plot summaries of movies, educators could curate relevant films for specific subjects, helping to engage students in learning. Furthermore, classification can be used to create datasets that facilitate research into cultural and historical contexts presented in movies, which can enhance the educational experience.
+
+### **SDG 5: Gender Equality**
+The analysis of actor gender distributions through text classification of movie metadata can reveal trends and disparities in representation. This can promote a deeper understanding of gender equality within the film industry, potentially influencing industry practices to foster more balanced representation. The ability to track and classify gender-specific trends also contributes to advocacy efforts aiming for greater gender equality both in media and beyond.
+
+### **SDG 16: Peace, Justice, and Strong Institutions**
+By analyzing movie genres and plot summaries, text classification can uncover how films address societal issues such as justice, peace, and human rights. Movies that focus on these themes can play a role in influencing public opinion, fostering greater awareness, and inspiring action toward peaceful and just societies.
+
+Through the integration of text classification into the analysis of movies, this project has the potential to support various SDGs by offering insights that can influence societal and industry practices, promote inclusivity, and contribute to educational and advocacy efforts worldwide
