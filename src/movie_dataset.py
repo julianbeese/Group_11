@@ -17,10 +17,7 @@ The data is expected to be in the 'data' directory relative to the script locati
 
 import ast
 from collections import Counter
-import datetime
 from pathlib import Path
-import random
-
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -328,7 +325,8 @@ class MovieDataset:
 
     def get_random_movie(self):
         """
-        Get a random movie with its genres, actors, and a generated summary based on title and genres.
+        Get a random movie with its genres, actors, and a generated summary 
+        based on title and genres.
 
         Returns:
             dict: Dictionary containing movie title, actors, genres, and a generated summary

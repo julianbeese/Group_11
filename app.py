@@ -19,13 +19,12 @@ Pages:
    - Compares LLM classifications with actual genres from the database
 """
 
-import ast
+
 import numpy as np
 import pandas as pd
-import random
 import requests
 import streamlit as st
-import time
+
 
 from src.movie_dataset import MovieDataset
 
