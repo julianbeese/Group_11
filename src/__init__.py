@@ -7,6 +7,7 @@ and extracts it to a local directory.
 The dataset is downloaded from: http://www.cs.cmu.edu/~ark/personas/data/MovieSummaries.tar.gz
 and stored in a 'data' directory relative to this script.
 """
+
 import os
 import tarfile
 from pathlib import Path
@@ -16,6 +17,7 @@ DATA_URL = "http://www.cs.cmu.edu/~ark/personas/data/MovieSummaries.tar.gz"
 DATA_DIR = Path("data")
 DATA_FILE = DATA_DIR / "MovieSummaries.tar.gz"
 EXTRACTED_DIR = DATA_DIR
+
 
 def download_and_extract_data():
     """
@@ -31,6 +33,7 @@ def download_and_extract_data():
         print("Extracting dataset...")
         extract_data()
 
+
 def download_data():
     """
     Download the Movie Summaries dataset from the specified URL.
@@ -41,6 +44,7 @@ def download_data():
         for chunk in response.iter_content(chunk_size=1024):
             file.write(chunk)
 
+
 def extract_data():
     """
     Extract the downloaded tar.gz file to the data directory.
@@ -48,5 +52,6 @@ def extract_data():
     """
     with tarfile.open(DATA_FILE, "r:gz") as tar:
         tar.extractall(DATA_DIR)
+
 
 download_and_extract_data()

@@ -49,10 +49,11 @@ Make your calls compliant with __pydantic__ and __static type checking__ when ap
 - [X] Develop a second method called __actor_count__. This method calculates a pandas dataframe with a histogram of "number of actors" vs "movie counts".
 - [X] Develop a third method called __actor_distributions__ that receives as arguments a string called "gender", two floats: "max_height" and "min_height", and a bool called "plot", with default False. If "gender" is not a string of if the hieghts are not numerical values, an exception must be raised. If the variable "plot" is True, this method should do a plot in matplotlib of the height distributions. The "gender" variable should accept "All" or the distinct non-missing values in the dataset. Do you think the heights should have a special check?
 - [X] Make a test with pytest (I want to just run _pytest_ in the main directory and perform the tests) where you test if the error handling the first and third methods are working properly.
+- 
 
 ### Day 1, Phase 4
 
-- [ ] Make a Streamlit App where you import your __Class__ and plot the contents of each method in a plot.
+- [X] Make a Streamlit App where you import your __Class__ and plot the contents of each method in a plot.
         * It should plot an histogram of the __movie_type__ method and the app must have a field where to select the value of N.
         * It should plot a second histogram with the result of method __actor_count__.
         * It should plot the distribution or distributions of the third method. Add a dropdown to select "gender" and two input fields for the heights in the app. 

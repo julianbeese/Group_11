@@ -96,10 +96,12 @@ class MovieDataset:
                     sep="\t",
                     header=None,
                     names=["movie_id", "summary"],
-                    encoding="utf-8"
+                    encoding="utf-8",
                 )
             except FileNotFoundError:
-                print("Plot summaries file not found. Some functionality will be limited.")
+                print(
+                    "Plot summaries file not found. Some functionality will be limited."
+                )
                 self.plot_summaries = pd.DataFrame(columns=["movie_id", "summary"])
 
             print("Datasets loaded successfully.")
@@ -220,7 +222,9 @@ class MovieDataset:
                           number of movies released per year.
         """
         df = self.movie_metadata.copy()
-        df["release_year"] = pd.to_numeric(df["release_date"].str.split("-").str[0], errors="coerce")
+        df["release_year"] = pd.to_numeric(
+            df["release_date"].str.split("-").str[0], errors="coerce"
+        )
         df = df.dropna(subset=["release_year"])
         df["release_year"] = df["release_year"].astype(int)
 
@@ -289,7 +293,9 @@ class MovieDataset:
             result = birth_counts.sort_values("Year").reset_index(drop=True)
 
         elif time_unit == "M":
-            df["birth_month"] = pd.to_datetime(df["actor_dob"], errors="coerce").dt.month
+            df["birth_month"] = pd.to_datetime(
+                df["actor_dob"], errors="coerce"
+            ).dt.month
 
             df = df.dropna(subset=["birth_month"])
 
@@ -299,9 +305,18 @@ class MovieDataset:
             result = birth_counts.sort_values("Month").reset_index(drop=True)
 
             month_names = {
-                1: "January", 2: "February", 3: "March", 4: "April",
-                5: "May", 6: "June", 7: "July", 8: "August",
-                9: "September", 10: "October", 11: "November", 12: "December"
+                1: "January",
+                2: "February",
+                3: "March",
+                4: "April",
+                5: "May",
+                6: "June",
+                7: "July",
+                8: "August",
+                9: "September",
+                10: "October",
+                11: "November",
+                12: "December",
             }
             result["Month_Name"] = result["Month"].map(month_names)
 
@@ -353,7 +368,7 @@ class MovieDataset:
         try:
             movie_characters = self.character_metadata[
                 self.character_metadata["freebase_movie_id"] == movie_id
-                ]
+            ]
 
             movie_characters = movie_characters.sort_values("actor_name")
 
@@ -369,7 +384,7 @@ class MovieDataset:
             "actors": actors,
             "genres": genres_list,
             "movie_id": movie_id,
-            "release_year": release_year
+            "release_year": release_year,
         }
 
         return movie_info
@@ -403,16 +418,22 @@ class MovieDataset:
         elif "Drama" in genres or "drama" in [g.lower() for g in genres]:
             summary += ". The story explores complex characters and emotional themes."
         elif "Action" in genres or "action" in [g.lower() for g in genres]:
-            summary += ". The film features exciting sequences with physical feats and stunts."
+            summary += (
+                ". The film features exciting sequences with physical feats and stunts."
+            )
         elif "Documentary" in genres or "documentary" in [g.lower() for g in genres]:
             summary += ". The film presents real-life events and issues through factual information."
         elif "Romance" in genres or "romance" in [g.lower() for g in genres]:
-            summary += ". The story focuses on the romantic relationships between characters."
+            summary += (
+                ". The story focuses on the romantic relationships between characters."
+            )
         elif "Thriller" in genres or "thriller" in [g.lower() for g in genres]:
             summary += ". The movie builds suspense and tension to keep viewers on the edge of their seats."
-        elif "Science Fiction" in genres or "sci-fi" in [g.lower() for g in genres] or "science fiction" in [g.lower()
-                                                                                                             for g in
-                                                                                                             genres]:
+        elif (
+            "Science Fiction" in genres
+            or "sci-fi" in [g.lower() for g in genres]
+            or "science fiction" in [g.lower() for g in genres]
+        ):
             summary += ". The story explores futuristic concepts, advanced technology, or life in other worlds."
         else:
             summary += ". The film tells a compelling story that engages viewers from beginning to end."
@@ -426,7 +447,7 @@ class MovieDataset:
         Returns:
             pd.DataFrame: DataFrame containing movie_id and summary columns
         """
-        if hasattr(self, 'plot_summaries'):
+        if hasattr(self, "plot_summaries"):
             return self.plot_summaries
         else:
             try:
@@ -435,7 +456,7 @@ class MovieDataset:
                     sep="\t",
                     header=None,
                     names=["movie_id", "summary"],
-                    encoding="utf-8"
+                    encoding="utf-8",
                 )
                 return self.plot_summaries
             except FileNotFoundError:

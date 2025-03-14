@@ -7,8 +7,10 @@ It includes tests for:
 - Invalid gender and height parameter handling for actor_distributions
 - Valid actor distribution data return
 """
+
 # pylint: disable=redefined-outer-name
 import pandas as pd
+
 # pylint: disable=import-error
 import pytest
 from src.movie_dataset import MovieDataset
